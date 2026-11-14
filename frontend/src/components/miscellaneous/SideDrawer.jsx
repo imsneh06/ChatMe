@@ -7,17 +7,13 @@ import {
   MenuButton,
   MenuList,
   Avatar,
-  AvatarBadge,
-  AvatarGroup,
   MenuItem,
   MenuDivider,
   Drawer,
   DrawerBody,
-  DrawerFooter,
   DrawerHeader,
   DrawerOverlay,
   DrawerContent,
-  DrawerCloseButton,
   useDisclosure,
   Input,
   useToast,
@@ -31,17 +27,18 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import ChatLoading from "../ChatLoading.jsx";
 import UserListItem from "../UserAvatar/UserListItem.jsx";
-import { getSender, getSenderDetails } from "../../config/ChatLogics.jsx";
+import { getSender } from "../../config/ChatLogics.jsx";
 
 const SideDrawer = () => {
-  const apiUrl = import.meta.env.VITE_BACKEND_URL;
+  const apiUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:5001";
   const [search, setSearch] = useState("");
   const [searchResult, setSearchResult] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [loadingChat, setLoadingChat] = useState();
+  const [loadingChat, setLoadingChat] = useState(false);
 
   const {
     user,
+    setUser,
     setSelectedChat,
     chats,
     setChats,
@@ -50,20 +47,21 @@ const SideDrawer = () => {
   } = ChatState();
   const navigate = useNavigate();
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const toast = useToast();
 
   const logOutHandler = () => {
     localStorage.removeItem("userInfo");
+    setUser(null);
+    setSelectedChat(null);
     navigate("/");
   };
 
-  const toast = useToast();
-
   const handleSearch = async () => {
-    if (!search) {
+    if (!search.trim()) {
       toast({
-        title: "Please enter something to search !",
+        title: "Please enter a name or email to search",
         status: "warning",
-        duration: 5000,
+        duration: 3000,
         isClosable: true,
         position: "top-left",
       });
@@ -86,11 +84,12 @@ const SideDrawer = () => {
       setLoading(false);
       setSearchResult(data);
     } catch (error) {
+      setLoading(false);
       toast({
-        title: "Error!",
-        description: error.response.data.message,
+        title: "Error searching users",
+        description: error.response?.data?.message || error.message,
         status: "error",
-        duration: 5000,
+        duration: 4000,
         isClosable: true,
         position: "bottom-left",
       });
@@ -112,17 +111,21 @@ const SideDrawer = () => {
         { userId },
         config
       );
-      if (!chats.find((c) => c._id === data._id)) setChats([data, ...chats]);
+
+      if (!chats.find((c) => c._id === data._id)) {
+        setChats([data, ...chats]);
+      }
 
       setSelectedChat(data);
       setLoadingChat(false);
       onClose();
     } catch (error) {
+      setLoadingChat(false);
       toast({
-        title: "Error loading the chat !",
-        description: error.message,
+        title: "Error opening chat",
+        description: error.response?.data?.message || error.message,
         status: "warning",
-        duration: 5000,
+        duration: 4000,
         isClosable: true,
         position: "bottom-left",
       });
@@ -137,18 +140,23 @@ const SideDrawer = () => {
         alignItems="center"
         bg="white"
         w="100%"
-        p="5px 10px 5 px 10px"
-        borderWidth="5px"
+        p="6px 12px"
+        borderWidth="3px"
+        borderColor="teal.500"
       >
-        <Tooltip label="Search User to chat..." hasArrow placement="bottom-end">
-          <Button variant="ghost" onClick={onOpen}>
+        <Tooltip label="Search users to chat with" hasArrow placement="bottom-end">
+          <Button variant="ghost" onClick={onOpen} colorScheme="teal">
             <i className="fa-solid fa-magnifying-glass"></i>
-            <Text display={{ base: "none", md: "flex" }} px="4">
+            <Text display={{ base: "none", md: "flex" }} px="2" fontWeight="600">
               Search Contacts
             </Text>
           </Button>
         </Tooltip>
-        <Text>😜ChatMe</Text>
+
+        <Text fontSize="2xl" fontFamily="Work sans" fontWeight="bold" color="teal.700">
+          💬 ChatMe
+        </Text>
+
         <div>
           <Menu>
             <MenuButton p={1} style={{ position: "relative" }}>
@@ -159,11 +167,11 @@ const SideDrawer = () => {
                     position: "absolute",
                     top: "2px",
                     right: "4px",
-                    backgroundColor: "red",
+                    backgroundColor: "#E53E3E",
                     color: "white",
                     borderRadius: "50%",
-                    padding: "1.5px 5px",
-                    fontSize: "10px",
+                    padding: "2px 6px",
+                    fontSize: "11px",
                     fontWeight: "bold",
                     display: "flex",
                     justifyContent: "center",
@@ -174,31 +182,32 @@ const SideDrawer = () => {
                 </span>
               )}
             </MenuButton>
-            <MenuList pl={2} bg="green.100">
-              {!notification.length && "No new messages. "}
+            <MenuList pl={2} bg="teal.50">
+              {!notification.length && "No new messages."}
               {notification.map((notify) => (
                 <MenuItem
-                  bg="green.100"
+                  bg="teal.50"
                   key={notify._id}
                   onClick={() => {
                     setSelectedChat(notify.chat);
                     setNotification(notification.filter((n) => n !== notify));
                   }}
                 >
-                  {notify.chat.isGroupChat
+                  {notify.chat?.isGroupChat
                     ? `New Message in ${notify.chat.chatName}`
-                    : `New Message from ${getSender(user, notify.chat.users)}`}
+                    : `New Message from ${getSender(user, notify.chat?.users)}`}
                 </MenuItem>
               ))}
             </MenuList>
           </Menu>
+
           <Menu>
-            <MenuButton as={Button} rightIcon={<ChevronDownIcon />}>
+            <MenuButton as={Button} rightIcon={<ChevronDownIcon />} colorScheme="teal" variant="ghost">
               <Avatar
                 size="sm"
                 cursor="pointer"
-                name={user.name}
-                src={user.pic}
+                name={user?.name}
+                src={user?.pic}
               />
             </MenuButton>
             <MenuList>
@@ -206,7 +215,9 @@ const SideDrawer = () => {
                 <MenuItem>My Profile</MenuItem>
               </Profile>
               <MenuDivider />
-              <MenuItem onClick={logOutHandler}>Logout</MenuItem>
+              <MenuItem onClick={logOutHandler} color="red.500">
+                Logout
+              </MenuItem>
             </MenuList>
           </Menu>
         </div>
@@ -223,22 +234,25 @@ const SideDrawer = () => {
                 mr={2}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
               />
-              <Button onClick={handleSearch}>Search</Button>
+              <Button onClick={handleSearch} colorScheme="teal">
+                Search
+              </Button>
             </Box>
             {loading ? (
               <ChatLoading />
             ) : (
-              searchResult?.map((user) => (
+              searchResult?.map((u) => (
                 <UserListItem
-                  key={user._id}
-                  user={user}
-                  handleFunction={() => accessChat(user._id)}
+                  key={u._id}
+                  user={u}
+                  handleFunction={() => accessChat(u._id)}
                 />
               ))
             )}
 
-            {loadingChat && <Spinner ml="auto" display="flex" />}
+            {loadingChat && <Spinner ml="auto" display="flex" mt={4} />}
           </DrawerBody>
         </DrawerContent>
       </Drawer>

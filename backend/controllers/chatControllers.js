@@ -1,69 +1,26 @@
 const asyncHandler = require("express-async-handler");
-const Chat = require("../models/chatModel.js");
-const User = require("../models/UserModel.js");
+const storageService = require("../services/storageService.js");
 
 const accessChat = asyncHandler(async (req, res) => {
   const { userId } = req.body;
 
   if (!userId) {
-    console.log("UserId param not sent with request");
-    return res.sendStatus(400);
+    return res.status(400).send({ message: "UserId param not sent with request" });
   }
-  let isChat = await Chat.find({
-    isGroupChat: false,
-    $and: [
-      { users: { $elemMatch: { $eq: req.user._id } } },
-      { users: { $elemMatch: { $eq: userId } } },
-    ],
-  })
-    .populate("users", "-password")
-    .populate("latestMessage");
 
-  isChat = await User.populate(isChat, {
-    path: "latestMessage.sender",
-    select: "name pic email",
-  });
-
-  if (isChat.length > 0) {
-    res.send(isChat[0]);
-  } else {
-    let chatData = {
-      chatName: "sender",
-      isGroupChat: false,
-      users: [req.user._id, userId],
-    };
-
-    try {
-      const createdChat = await Chat.create(chatData);
-
-      const FullChat = await Chat.findOne({ _id: createdChat._id }).populate(
-        "users",
-        "-password"
-      );
-
-      res.status(200).send(FullChat);
-    } catch (error) {
-      res.status(400);
-      throw new Error(error.message);
-    }
+  try {
+    const chat = await storageService.accessDirectChat(req.user._id, userId);
+    res.status(200).send(chat);
+  } catch (error) {
+    res.status(400);
+    throw new Error(error.message);
   }
 });
 
 const fetchChats = asyncHandler(async (req, res) => {
   try {
-    Chat.find({ users: { $elemMatch: { $eq: req.user._id } } })
-      .populate("users", "-password")
-      .populate("groupAdmin", "-password")
-      .populate("latestMessage")
-      .sort({ updatedAt: -1 })
-      .then(async (results) => {
-        results = await User.populate(results, {
-          path: "latestMessage.sender",
-          select: "name pic email",
-        });
-
-        res.status(200).send(results);
-      });
+    const chats = await storageService.getUserChats(req.user._id);
+    res.status(200).send(chats);
   } catch (error) {
     res.status(400);
     throw new Error(error.message);
@@ -74,25 +31,28 @@ const createGroupChat = asyncHandler(async (req, res) => {
   if (!req.body.users || !req.body.name) {
     return res.status(400).send({ message: "Please fill all the fields" });
   }
-  let users = JSON.parse(req.body.users);
 
-  if (users.lenth < 2) {
-    return res.status(400).send("Select more people for a group chat invite.");
+  let users = req.body.users;
+  if (typeof users === "string") {
+    try {
+      users = JSON.parse(users);
+    } catch (e) {
+      return res.status(400).send({ message: "Invalid users format" });
+    }
   }
 
-  users.push(req.user);
+  if (!Array.isArray(users) || users.length < 2) {
+    return res
+      .status(400)
+      .send({ message: "Select at least 2 other people for a group chat." });
+  }
 
   try {
-    const groupChat = await Chat.create({
-      chatName: req.body.name,
+    const fullGroupChat = await storageService.createGroupChat({
+      name: req.body.name,
       users: users,
-      isGroupChat: true,
-      groupAdmin: req.user,
+      groupAdminId: req.user._id,
     });
-
-    const fullGroupChat = await Chat.findOne({ _id: groupChat._id })
-      .populate("users", "-password")
-      .populate("groupAdmin", "-password");
 
     res.status(200).json(fullGroupChat);
   } catch (error) {
@@ -104,65 +64,48 @@ const createGroupChat = asyncHandler(async (req, res) => {
 const renameGroup = asyncHandler(async (req, res) => {
   const { chatId, chatName } = req.body;
 
-  const updatedChat = await Chat.findByIdAndUpdate(
-    chatId,
-    {
-      chatName,
-    },
-    {
-      new: true,
-    }
-  )
-    .populate("users", "-password")
-    .populate("groupAdmin", "-password");
+  if (!chatId || !chatName) {
+    return res.status(400).send({ message: "chatId and chatName are required" });
+  }
 
-  if (!updatedChat) {
-    res.status(404);
-    throw new Error("Chat Not Found");
-  } else {
+  try {
+    const updatedChat = await storageService.renameGroupChat(chatId, chatName);
     res.json(updatedChat);
+  } catch (error) {
+    res.status(error.statusCode || 400);
+    throw new Error(error.message);
   }
 });
 
 const addToGroup = asyncHandler(async (req, res) => {
   const { chatId, userId } = req.body;
 
-  const added = await Chat.findByIdAndUpdate(
-    chatId,
-    {
-      $push: { users: userId },
-    },
-    { new: true }
-  )
-    .populate("users", "-password")
-    .populate("groupAdmin", "-password");
+  if (!chatId || !userId) {
+    return res.status(400).send({ message: "chatId and userId are required" });
+  }
 
-  if (!added) {
-    res.status(404);
-    throw new Error("Chat Not Found");
-  } else {
+  try {
+    const added = await storageService.addToGroup(chatId, userId);
     res.json(added);
+  } catch (error) {
+    res.status(error.statusCode || 400);
+    throw new Error(error.message);
   }
 });
 
 const removeFromGroup = asyncHandler(async (req, res) => {
   const { chatId, userId } = req.body;
 
-  const removed = await Chat.findByIdAndUpdate(
-    chatId,
-    {
-      $pull: { users: userId },
-    },
-    { new: true }
-  )
-    .populate("users", "-password")
-    .populate("groupAdmin", "-password");
+  if (!chatId || !userId) {
+    return res.status(400).send({ message: "chatId and userId are required" });
+  }
 
-  if (!removed) {
-    res.status(404);
-    throw new Error("Chat Not Found");
-  } else {
+  try {
+    const removed = await storageService.removeFromGroup(chatId, userId);
     res.json(removed);
+  } catch (error) {
+    res.status(error.statusCode || 400);
+    throw new Error(error.message);
   }
 });
 

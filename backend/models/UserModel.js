@@ -22,13 +22,13 @@ userSchema.methods.matchPassword = async function (enteredPassword) {
 };
 
 userSchema.pre("save", async function (next) {
-  if (!this.isModified) {
-    next();
+  if (!this.isModified("password")) {
+    return next ? next() : undefined;
   }
-  //b4 saving to db this will encrypt the password
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
-}); //b4 saving
+  if (next) next();
+});
 
 const User = mongoose.model("User", userSchema);
 module.exports = User;

@@ -7,33 +7,29 @@ import ChatLoading from "./ChatLoading.jsx";
 import { getSender } from "../config/ChatLogics.jsx";
 import GroupChatModal from "./miscellaneous/GroupChatModal.jsx";
 
-
-const MyChats = ({fetchAgain}) => {
-
-  const apiUrl = import.meta.env.VITE_BACKEND_URL;
+const MyChats = ({ fetchAgain }) => {
+  const apiUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:5001";
   const [loggedUser, setLoggedUser] = useState();
   const { user, setSelectedChat, selectedChat, chats, setChats } = ChatState();
   const toast = useToast();
-  
+
   const fetchChats = async () => {
+    if (!user || !user.token) return;
+
     try {
       const config = {
         headers: {
           Authorization: `Bearer ${user.token}`,
         },
       };
-      const { data } = await axios.get(
-        `${apiUrl}/api/chat`,
-        config
-      );
-      // console.log(data);
+      const { data } = await axios.get(`${apiUrl}/api/chat`, config);
       setChats(data);
     } catch (error) {
       toast({
-        title: "Error loading the chat !",
-        description: error.message,
+        title: "Error loading chats",
+        description: error.response?.data?.message || error.message,
         status: "warning",
-        duration: 5000,
+        duration: 4000,
         isClosable: true,
         position: "bottom-left",
       });
@@ -42,8 +38,11 @@ const MyChats = ({fetchAgain}) => {
 
   useEffect(() => {
     setLoggedUser(JSON.parse(localStorage.getItem("userInfo")));
-    fetchChats();
-  }, [fetchAgain]);
+    if (user && user.token) {
+      fetchChats();
+    }
+  }, [user, fetchAgain]);
+
   return (
     <Box
       display={{ base: selectedChat ? "none" : "flex", md: "flex" }}
@@ -52,39 +51,39 @@ const MyChats = ({fetchAgain}) => {
       p={3}
       borderColor="rgb(14, 209, 134)"
       bg="rgba(255, 255, 255, 0.88)"
-      w={{ base: "100%", md: "30%" }}
+      w={{ base: "100%", md: "31%" }}
       borderRadius="lg"
       borderWidth="2px"
     >
       <Box
         pb={3}
         px={3}
-        fontSize={{ base: "28px", md: "30px" }}
+        fontSize={{ base: "22px", md: "26px" }}
         fontFamily="Work sans"
-        fontWeight="700"
         display="flex"
         w="100%"
         justifyContent="space-between"
         alignItems="center"
-        
       >
-        Chats
+        My Chats
         <GroupChatModal>
-        <Button
-          display="flex"
-          marginLeft="5px"
-          fontSize={{ base: "17px", md: "10px", lg: "17px" }}
-          rightIcon={<AddIcon />}
-        >
-          Create Group
-        </Button>
+          <Button
+            display="flex"
+            fontSize={{ base: "14px", md: "12px", lg: "14px" }}
+            rightIcon={<AddIcon />}
+            colorScheme="teal"
+            size="sm"
+          >
+            New Group
+          </Button>
         </GroupChatModal>
       </Box>
+
       <Box
         display="flex"
         flexDir="column"
         p={3}
-        bg="rgba(255, 255, 255, 0.66)"
+        bg="#F8F8F8"
         w="100%"
         h="100%"
         borderRadius="lg"
@@ -103,11 +102,22 @@ const MyChats = ({fetchAgain}) => {
                 borderRadius="lg"
                 key={chat._id}
               >
-                <Text>
+                <Text fontWeight="600">
                   {!chat.isGroupChat
-                    ? getSender(loggedUser || {}, chat.users)
+                    ? getSender(loggedUser || user, chat.users)
                     : chat.chatName}
                 </Text>
+                {chat.latestMessage && (
+                  <Text fontSize="xs" opacity={0.85}>
+                    <b>
+                      {chat.latestMessage.sender?.name || "Someone"}:{" "}
+                    </b>
+                    {chat.latestMessage.content &&
+                    chat.latestMessage.content.length > 50
+                      ? chat.latestMessage.content.substring(0, 51) + "..."
+                      : chat.latestMessage.content}
+                  </Text>
+                )}
               </Box>
             ))}
           </Stack>

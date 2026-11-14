@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 const ChatContext = createContext();
 
@@ -7,21 +7,24 @@ const ChatProvider = ({ children }) => {
   const [user, setUser] = useState();
   const [selectedChat, setSelectedChat] = useState();
   const [chats, setChats] = useState([]);
-  const [notification, setNotification] = useState([]); //global context
+  const [notification, setNotification] = useState([]);
 
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
-    const userInfo = JSON.parse(localStorage.getItem("userInfo"));
+    try {
+      const userInfo = JSON.parse(localStorage.getItem("userInfo"));
+      setUser(userInfo);
 
-    setUser(userInfo);
-
-    if (!userInfo) {
-      //if the user is not logged in
-
+      if (!userInfo && location.pathname !== "/") {
+        navigate("/");
+      }
+    } catch (err) {
+      localStorage.removeItem("userInfo");
       navigate("/");
     }
-  }, [navigate]);
+  }, [navigate, location.pathname]);
 
   return (
     <ChatContext.Provider
@@ -42,7 +45,7 @@ const ChatProvider = ({ children }) => {
 };
 
 export const ChatState = () => {
-  return useContext(ChatContext); //make state acccesible in other parts of the app
+  return useContext(ChatContext);
 };
 
 export default ChatProvider;

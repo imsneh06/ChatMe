@@ -1,6 +1,6 @@
 const jwt = require("jsonwebtoken");
-const User = require("../models/UserModel.js");
 const asyncHandler = require("express-async-handler");
+const storageService = require("../services/storageService.js");
 
 const protect = asyncHandler(async (req, res, next) => {
   let token;
@@ -11,22 +11,28 @@ const protect = asyncHandler(async (req, res, next) => {
   ) {
     try {
       token = req.headers.authorization.split(" ")[1];
+      const decoded = jwt.verify(
+        token,
+        process.env.JWT_SECRET || "default_jwt_secret_chatme_2026"
+      );
 
-      // Bearer token : we will remove the bearer and take the token
-
-      //decode the token id
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      req.user = await User.findById(decoded.id).select("-password");
-
+      const user = await storageService.findUserById(decoded.id);
+      if (!user) {
+        res.status(401);
+        throw new Error("User not found or token invalid");
+      }
+      req.user = user;
       next();
     } catch (error) {
       res.status(401);
-      throw new Error("Not Authorized ! , token failed...");
+      throw new Error("Not Authorized! Token failed or expired.");
     }
   }
+
   if (!token) {
     res.status(401);
-    throw new Error("Not Authorized, no token...");
+    throw new Error("Not Authorized, no token provided.");
   }
 });
+
 module.exports = { protect };

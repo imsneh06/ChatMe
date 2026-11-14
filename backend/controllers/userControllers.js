@@ -1,32 +1,17 @@
 const asyncHandler = require("express-async-handler");
-const User = require("../models/UserModel.js");
 const generateToken = require("../config/generateToken.js");
+const storageService = require("../services/storageService.js");
 
 const registerUser = asyncHandler(async (req, res) => {
   const { name, email, password, pic } = req.body;
 
   if (!name || !email || !password) {
     res.status(400);
-    throw new Error("Please Enter all the fields");
+    throw new Error("Please enter all the required fields");
   }
 
-  //check if user already exist
-
-  const userExists = await User.findOne({ email });
-
-  if (userExists) {
-    res.status(400);
-    throw new Error("User Already Exists");
-  }
-
-  const user = await User.create({
-    name,
-    email,
-    password,
-    pic,
-  });
-
-  if (user) {
+  try {
+    const user = await storageService.createUser({ name, email, password, pic });
     res.status(201).json({
       _id: user._id,
       name: user.name,
@@ -34,17 +19,23 @@ const registerUser = asyncHandler(async (req, res) => {
       pic: user.pic,
       token: generateToken(user._id),
     });
-  } else {
-    res.status(400);
-    throw new Error("Failed to create a user!");
+  } catch (err) {
+    res.status(err.statusCode || 400);
+    throw new Error(err.message || "Failed to create user");
   }
 });
+
 const authUser = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
-  const user = await User.findOne({ email });
+  if (!email || !password) {
+    res.status(400);
+    throw new Error("Please enter both email and password");
+  }
 
-  if (user && (await user.matchPassword(password))) {
+  const user = await storageService.findUserByEmail(email);
+
+  if (user && (await storageService.verifyPassword(password, user.password))) {
     res.json({
       _id: user._id,
       name: user.name,
@@ -57,20 +48,10 @@ const authUser = asyncHandler(async (req, res) => {
     throw new Error("Invalid Email or Password!");
   }
 });
-//its going to look like this /api/user?search=narayan
-//since i dont want to use post request so ill use queries
-const allUsers = asyncHandler(async (req, res) => {
-  const keyword = req.query.search
-    ? {
-        $or: [
-          { name: { $regex: req.query.search, $options: "i" } },
-          { email: { $regex: req.query.search, $options: "i" } },
-        ],
-      }
-    : {};
-  // console.log(keyword)
 
-  const users = await User.find(keyword).find({ _id: { $ne: req.user._id } });
+const allUsers = asyncHandler(async (req, res) => {
+  const users = await storageService.searchUsers(req.query.search, req.user._id);
   res.send(users);
 });
+
 module.exports = { registerUser, authUser, allUsers };

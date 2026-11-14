@@ -21,7 +21,7 @@ import UserBadgeItem from "../UserAvatar/UserBadgeItem.jsx";
 
 const GroupChatModal = ({ children }) => {
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const [groupChatName, setGroupChatName] = useState();
+  const [groupChatName, setGroupChatName] = useState("");
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [search, setSearch] = useState("");
   const [searchResult, setSearchResult] = useState([]);
@@ -29,12 +29,12 @@ const GroupChatModal = ({ children }) => {
 
   const toast = useToast();
   const { user, chats, setChats } = ChatState();
-  const apiUrl = import.meta.env.VITE_BACKEND_URL;
+  const apiUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:5001";
 
   const handleSearch = async (query) => {
-    // const Url = "https://chatme-backend-3j4w.onrender.com";
     setSearch(query);
     if (!query) {
+      setSearchResult([]);
       return;
     }
 
@@ -47,36 +47,56 @@ const GroupChatModal = ({ children }) => {
       };
 
       const { data } = await axios.get(
-        `${apiUrl}/api/user?search=${search}`,
+        `${apiUrl}/api/user?search=${query}`,
         config
       );
-      // console.log(data);
       setLoading(false);
       setSearchResult(data);
     } catch (error) {
+      setLoading(false);
       toast({
-        title: "Error!",
-        description: error.response.data.message,
+        title: "Search Error",
+        description: error.response?.data?.message || "Failed to search users",
         status: "warning",
-        duration: 5000,
+        duration: 4000,
         isClosable: true,
         position: "bottom-left",
       });
     }
   };
 
-  const handleSubmit = async () => {
-    if (!groupChatName || !selectedUsers) {
+  const handleGroup = (userToAdd) => {
+    if (selectedUsers.some((u) => u._id === userToAdd._id)) {
       toast({
-        title: "Please fill all the fields!",
-        description: error.response.data.message,
-        status: "warning",
-        duration: 5000,
+        title: "User already added",
+        status: "info",
+        duration: 3000,
         isClosable: true,
         position: "top",
       });
       return;
     }
+
+    setSelectedUsers([...selectedUsers, userToAdd]);
+  };
+
+  const handleDelete = (delUser) => {
+    setSelectedUsers(selectedUsers.filter((sel) => sel._id !== delUser._id));
+  };
+
+  const handleSubmit = async () => {
+    if (!groupChatName || selectedUsers.length < 2) {
+      toast({
+        title: "Incomplete Group Info",
+        description: "Please provide a group name and select at least 2 users.",
+        status: "warning",
+        duration: 4000,
+        isClosable: true,
+        position: "top",
+      });
+      return;
+    }
+
     try {
       const config = {
         headers: {
@@ -93,47 +113,30 @@ const GroupChatModal = ({ children }) => {
         config
       );
 
-      setChats([data, ...chats]); // add to the top
+      setChats([data, ...chats]);
       onClose();
+      setSelectedUsers([]);
+      setGroupChatName("");
+      setSearchResult([]);
       toast({
         title: "New group created!",
         status: "success",
-        duration: 5000,
+        duration: 3000,
         isClosable: true,
         position: "bottom",
       });
     } catch (error) {
       toast({
-        title: "Failed to create group!",
-        description: error.response.data.message,
-        status: "warning",
-        duration: 5000,
+        title: "Failed to create group",
+        description: error.response?.data?.message || error.message,
+        status: "error",
+        duration: 4000,
         isClosable: true,
         position: "bottom",
       });
     }
   };
 
-  const handleGroup = (userToAdd) => {
-    if (selectedUsers.includes(userToAdd)) {
-      toast({
-        title: "User already exists!",
-        description: error.response.data.message,
-        status: "warning",
-        duration: 5000,
-        isClosable: true,
-        position: "top",
-      });
-      return;
-    }
-    setSelectedUsers([...selectedUsers, userToAdd]);
-  };
-
-  const handleDelete = (userToDel) => {
-    setSelectedUsers(
-      selectedUsers.filter((selected) => selected._id !== userToDel._id)
-    );
-  };
   return (
     <>
       <span onClick={onOpen}>{children}</span>
@@ -142,56 +145,60 @@ const GroupChatModal = ({ children }) => {
         <ModalOverlay />
         <ModalContent>
           <ModalHeader
-            fontSize="35px"
-            display="flex"
+            fontSize="32px"
             fontFamily="Work sans"
+            display="flex"
             justifyContent="center"
           >
-            Create Group
+            Create Group Chat
           </ModalHeader>
           <ModalCloseButton />
           <ModalBody display="flex" flexDir="column" alignItems="center">
             <FormControl>
               <Input
-                placeholder="Group Name"
+                placeholder="Group Chat Name"
                 mb={3}
+                value={groupChatName}
                 onChange={(e) => setGroupChatName(e.target.value)}
               />
             </FormControl>
             <FormControl>
               <Input
-                placeholder="Name of contact"
+                placeholder="Search users (e.g. Guest, Narayan)"
                 mb={1}
+                value={search}
                 onChange={(e) => handleSearch(e.target.value)}
               />
             </FormControl>
+
             <Box w="100%" display="flex" flexWrap="wrap">
               {selectedUsers.map((u) => (
                 <UserBadgeItem
-                  key={user._id}
+                  key={u._id}
                   user={u}
                   handleFunction={() => handleDelete(u)}
                 />
               ))}
             </Box>
+
             {loading ? (
-              <div>loading...</div>
+              <div>Loading...</div>
             ) : (
               searchResult
                 ?.slice(0, 4)
-                .map((user) => (
+                .map((u) => (
                   <UserListItem
-                    key={user._id}
-                    user={user}
-                    handleFunction={() => handleGroup(user)}
+                    key={u._id}
+                    user={u}
+                    handleFunction={() => handleGroup(u)}
                   />
                 ))
             )}
           </ModalBody>
 
           <ModalFooter>
-            <Button colorScheme="green" onClick={handleSubmit}>
-              Create
+            <Button colorScheme="teal" onClick={handleSubmit}>
+              Create Group
             </Button>
           </ModalFooter>
         </ModalContent>

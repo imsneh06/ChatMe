@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import {
   Button,
-  Flex,
   FormControl,
   FormLabel,
   Input,
@@ -10,41 +9,47 @@ import {
   useToast,
   VStack,
 } from "@chakra-ui/react";
-// import { useToast } from "@chakra-ui/react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { ChatState } from "../../Context/ChatProvider.jsx";
 
 const Login = () => {
-  const apiUrl = import.meta.env.VITE_BACKEND_URL;
-  const [email, setEmail] = useState();
-  const [password, setPassword] = useState();
+  const apiUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:5001";
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [show, setShow] = useState(false);
-  const [loading,setLoading]=useState(false);
+  const [loading, setLoading] = useState(false);
   const toast = useToast();
   const navigate = useNavigate();
+  const { setUser } = ChatState();
 
   const handleClick = () => {
     setShow(!show);
   };
 
+  const fillDemoCredentials = () => {
+    setEmail("guest@example.com");
+    setPassword("password123");
+  };
+
   const submitHandler = async () => {
     setLoading(true);
-    if ( !email || !password) {
+    if (!email || !password) {
       toast({
         title: "Please fill all the fields",
         status: "warning",
-        duration: 5000,
+        duration: 4000,
         isClosable: true,
         position: "bottom",
       });
       setLoading(false);
       return;
     }
-    // console.log(email,password)
+
     try {
       const config = {
         headers: {
-          "Content-type": "application/json", //setting headers
+          "Content-type": "application/json",
         },
       };
       const { data } = await axios.post(
@@ -52,43 +57,48 @@ const Login = () => {
         { email, password },
         config
       );
-      // console.log(JSON.stringify(data));
-      
+
       toast({
         title: "Login Successful",
         status: "success",
-        duration: 5000,
+        duration: 3000,
         isClosable: true,
         position: "bottom",
       });
       localStorage.setItem("userInfo", JSON.stringify(data));
+      setUser(data);
       setLoading(false);
       navigate("/chats");
     } catch (error) {
       toast({
-        title: "Error!",
-        description: error.response.data.message,
-        status: "warning",
-        duration: 5000,
+        title: "Login Failed",
+        description:
+          error.response?.data?.message ||
+          error.message ||
+          "Could not connect to the server",
+        status: "error",
+        duration: 4000,
         isClosable: true,
         position: "bottom",
       });
       setLoading(false);
     }
   };
+
   return (
-    <VStack spacing="5px">
-      <FormControl id="email" isRequired>
-        <FormLabel>Email</FormLabel>
+    <VStack spacing="12px">
+      <FormControl id="login-email" isRequired>
+        <FormLabel fontWeight="600">Email Address</FormLabel>
         <Input
           bg="white"
+          type="email"
           placeholder="Enter Your Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
       </FormControl>
-      <FormControl id="password" isRequired>
-        <FormLabel>Password</FormLabel>
+      <FormControl id="login-password" isRequired>
+        <FormLabel fontWeight="600">Password</FormLabel>
         <InputGroup>
           <Input
             type={show ? "text" : "password"}
@@ -104,8 +114,9 @@ const Login = () => {
           </InputRightElement>
         </InputGroup>
       </FormControl>
+
       <Button
-        colorScheme="blue"
+        colorScheme="teal"
         width="100%"
         style={{ marginTop: 15 }}
         onClick={submitHandler}
@@ -113,17 +124,14 @@ const Login = () => {
       >
         Login
       </Button>
+
       <Button
         variant="solid"
-        colorScheme="red"
+        colorScheme="orange"
         width="100%"
-        style={{ marginTop: 5 }}
-        onClick={() => {
-          setEmail("guest@example.com");
-          setPassword("123456");
-        }}
+        onClick={fillDemoCredentials}
       >
-        Guest User Login
+        Use Demo Guest Account
       </Button>
     </VStack>
   );

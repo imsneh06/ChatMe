@@ -10,7 +10,6 @@ import {
   TabList,
   TabPanels,
   TabPanel,
-  background,
 } from "@chakra-ui/react";
 import React, { useEffect } from "react";
 
@@ -19,10 +18,8 @@ const HomePage = () => {
 
   useEffect(() => {
     const userInfo = JSON.parse(localStorage.getItem("userInfo"));
-
     if (userInfo) {
-      //if the user is already logged in
-      navigate("/");
+      navigate("/chats");
     }
   }, [navigate]);
 
@@ -30,37 +27,55 @@ const HomePage = () => {
     <Container maxW="xl" centerContent display="flex" justifyContent="center">
       <Box
         display="flex"
+        flexDirection="column"
+        alignItems="center"
         justifyContent="center"
         p={3}
         bg={"rgba(42, 227, 165, 0.95)"}
         w="100%"
         m="40px 0 15px 0"
         borderRadius="2xl"
-        borderWidth="5px"
+        borderWidth="3px"
+        borderColor="teal.600"
+        boxShadow="lg"
       >
         <Text
           fontSize="4xl"
           fontFamily="Work sans"
           color="black"
           fontWeight="bold"
-          // fontWeight={700}
         >
-          😜ChatMe
+          💬 ChatMe
+        </Text>
+        <Text fontSize="xs" color="gray.800" fontWeight="500">
+          Real-Time Messaging with Socket.io & Upstash / MongoDB
         </Text>
       </Box>
       <Box
-        bg="rgba(42, 227, 165, 0.86) "
+        bg="rgba(42, 227, 165, 0.92)"
         w="100%"
         borderRadius="2xl"
-        borderWidth="5px"
+        borderWidth="3px"
+        borderColor="teal.600"
         p={4}
+        boxShadow="lg"
       >
         <Tabs isFitted variant="enclosed">
           <TabList mb="1em">
-            <Tab borderRadius="2xl" borderWidth="5px" fontWeight={700}>
+            <Tab
+              borderRadius="xl"
+              borderWidth="2px"
+              fontWeight={700}
+              _selected={{ color: "teal.800", bg: "white" }}
+            >
               Login
             </Tab>
-            <Tab borderRadius="2xl" borderWidth="5px" fontWeight={700}>
+            <Tab
+              borderRadius="xl"
+              borderWidth="2px"
+              fontWeight={700}
+              _selected={{ color: "teal.800", bg: "white" }}
+            >
               Sign Up
             </Tab>
           </TabList>

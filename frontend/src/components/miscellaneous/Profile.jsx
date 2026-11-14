@@ -26,52 +26,49 @@ const Profile = ({ user, children }) => {
           display={{ base: "flex" }}
           icon={<ViewIcon />}
           onClick={onOpen}
+          aria-label="View user profile"
         />
       )}
 
-      <Modal
-       isOpen={isOpen} 
-       onClose={onClose}
-       size='lg'
-       isCentered>
+      <Modal isOpen={isOpen} onClose={onClose} size="lg" isCentered>
         <ModalOverlay />
-        <ModalContent
-          h='410px'
-        >
+        <ModalContent h="410px">
           <ModalHeader
-            fontSize="40px"
+            fontSize="36px"
             fontFamily="Work sans"
             display="flex"
             justifyContent="center"
           >
-            {user.name}
+            {user?.name || "User Profile"}
           </ModalHeader>
           <ModalCloseButton />
           <ModalBody
-          display='flex'
-          flexDir='column'
-          alignItems='center'
-          justifyContent='center'
+            display="flex"
+            flexDir="column"
+            alignItems="center"
+            justifyContent="center"
           >
             <Image
               borderRadius="full"
               boxSize="150px"
               alt={
                 user?.pic
-                  ? `${user.name}'s profile picture`
+                  ? `${user?.name}'s profile picture`
                   : `No profile photo`
               }
-              src={user?.pic || "../../assets/Default_PP.jpeg"}
+              src={user?.pic || "https://icon-library.com/images/anonymous-avatar-icon/anonymous-avatar-icon-25.jpg"}
             />
             <Text
-            fontSize={{base:'18px', md:'30px'}}
-            fontFamily='Work sans'>
-              Email: {user.email}
+              fontSize={{ base: "18px", md: "24px" }}
+              fontFamily="Work sans"
+              mt={4}
+            >
+              Email: {user?.email || "N/A"}
             </Text>
           </ModalBody>
 
           <ModalFooter>
-            <Button colorScheme="blue" mr={3} onClick={onClose}>
+            <Button colorScheme="teal" mr={3} onClick={onClose}>
               Close
             </Button>
           </ModalFooter>
