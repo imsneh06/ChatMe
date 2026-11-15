@@ -28,9 +28,10 @@ import axios from "axios";
 import ChatLoading from "../ChatLoading.jsx";
 import UserListItem from "../UserAvatar/UserListItem.jsx";
 import { getSender } from "../../config/ChatLogics.jsx";
+import { getBackendUrl } from "../../config/api.js";
 
 const SideDrawer = () => {
-  const apiUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:5001";
+  const apiUrl = getBackendUrl();
   const [search, setSearch] = useState("");
   const [searchResult, setSearchResult] = useState([]);
   const [loading, setLoading] = useState(false);

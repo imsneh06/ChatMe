@@ -6,9 +6,10 @@ import { AddIcon } from "@chakra-ui/icons";
 import ChatLoading from "./ChatLoading.jsx";
 import { getSender } from "../config/ChatLogics.jsx";
 import GroupChatModal from "./miscellaneous/GroupChatModal.jsx";
+import { getBackendUrl } from "../config/api.js";
 
 const MyChats = ({ fetchAgain }) => {
-  const apiUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:5001";
+  const apiUrl = getBackendUrl();
   const [loggedUser, setLoggedUser] = useState();
   const { user, setSelectedChat, selectedChat, chats, setChats } = ChatState();
   const toast = useToast();

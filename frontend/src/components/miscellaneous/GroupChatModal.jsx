@@ -18,6 +18,7 @@ import axios from "axios";
 import React, { useState } from "react";
 import UserListItem from "../UserAvatar/UserListItem";
 import UserBadgeItem from "../UserAvatar/UserBadgeItem.jsx";
+import { getBackendUrl } from "../../config/api.js";
 
 const GroupChatModal = ({ children }) => {
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -29,7 +30,7 @@ const GroupChatModal = ({ children }) => {
 
   const toast = useToast();
   const { user, chats, setChats } = ChatState();
-  const apiUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:5001";
+  const apiUrl = getBackendUrl();
 
   const handleSearch = async (query) => {
     setSearch(query);

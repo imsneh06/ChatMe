@@ -21,6 +21,7 @@ import React, { useState } from "react";
 import UserBadgeItem from "../UserAvatar/UserBadgeItem.jsx";
 import axios from "axios";
 import UserListItem from "../UserAvatar/UserListItem.jsx";
+import { getBackendUrl } from "../../config/api.js";
 
 function UpdateGroupChatModal({ fetchAgain, setFetchAgain, fetchMessages }) {
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -30,7 +31,7 @@ function UpdateGroupChatModal({ fetchAgain, setFetchAgain, fetchMessages }) {
   const [loading, setLoading] = useState(false);
   const [renameLoading, setRenameLoading] = useState(false);
 
-  const apiUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:5001";
+  const apiUrl = getBackendUrl();
   const toast = useToast();
   const { selectedChat, setSelectedChat, user } = ChatState();
 

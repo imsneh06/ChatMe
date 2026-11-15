@@ -21,8 +21,9 @@ import ScrollableChat from "./ScrollableChat.jsx";
 import io from "socket.io-client";
 import Lottie from "react-lottie";
 import animationData from "../animation/typing_dot_dropping.json";
+import { getBackendUrl } from "../config/api.js";
 
-const apiUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:5001";
+const apiUrl = getBackendUrl();
 
 let socket;
 

@@ -12,9 +12,10 @@ import {
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { ChatState } from "../../Context/ChatProvider.jsx";
+import { getBackendUrl } from "../../config/api.js";
 
 const Login = () => {
-  const apiUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:5001";
+  const apiUrl = getBackendUrl();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [show, setShow] = useState(false);
