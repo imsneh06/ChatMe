@@ -453,6 +453,39 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
     setReplyingTo(message);
   };
 
+  const handleDeleteChat = async () => {
+    if (!selectedChat || !user?.token) return;
+    if (!window.confirm("Are you sure you want to permanently delete this chat?")) return;
+
+    try {
+      const config = {
+        headers: {
+          Authorization: `Bearer ${user.token}`,
+        },
+      };
+      await axios.delete(`${apiUrl}/api/chat/${selectedChat._id}`, config);
+      setSelectedChat(null);
+      setChats((prev) => prev.filter((c) => String(c._id) !== String(selectedChat._id)));
+      setFetchAgain(!fetchAgain);
+      toast({
+        title: "Chat deleted",
+        status: "info",
+        duration: 3000,
+        isClosable: true,
+        position: "bottom",
+      });
+    } catch (err) {
+      toast({
+        title: "Error deleting chat",
+        description: err.response?.data?.message || err.message,
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+        position: "bottom",
+      });
+    }
+  };
+
   const formatRecSeconds = (sec) => {
     const m = Math.floor(sec / 60);
     const s = sec % 60;
@@ -515,7 +548,11 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
                       typing...
                     </span>
                   ) : !selectedChat.isGroupChat ? (
-                    isOnline ? (
+                    otherUser?.isDeleted ? (
+                      <span style={{ color: "#EF4444", fontStyle: "italic", fontWeight: "500" }}>
+                        Account deleted
+                      </span>
+                    ) : isOnline ? (
                       <span style={{ color: "var(--wa-accent-light)", fontWeight: "500" }}>online</span>
                     ) : (
                       "offline"
@@ -540,6 +577,18 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
                     setShowSearch(!showSearch);
                     if (showSearch) setSearchQuery("");
                   }}
+                />
+              </Tooltip>
+
+              <Tooltip label="Delete Chat" hasArrow>
+                <IconButton
+                  aria-label="Delete chat"
+                  icon={<DeleteIcon />}
+                  size="sm"
+                  variant="ghost"
+                  color="var(--wa-icon-gray)"
+                  _hover={{ bg: "var(--wa-hover-bg)", color: "#EF4444" }}
+                  onClick={handleDeleteChat}
                 />
               </Tooltip>
 
@@ -672,132 +721,158 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
             </Box>
           )}
 
-          {/* WhatsApp Bottom Input Bar */}
-          <Box
-            p="8px 16px"
-            bg="var(--wa-bg-panel)"
-            display="flex"
-            alignItems="center"
-            gap="8px"
-            borderTop="1px solid var(--wa-border)"
-          >
-            {/* Hidden File Input for Image Attachment */}
-            <input
-              type="file"
-              ref={fileInputRef}
-              accept="image/*"
-              style={{ display: "none" }}
-              onChange={handleImageSelect}
-            />
-
-            {/* Emoji Trigger */}
-            <Tooltip label="Emojis" hasArrow>
-              <IconButton
+          {/* WhatsApp Bottom Input Bar or Deleted Account Notice */}
+          {!selectedChat.isGroupChat && otherUser?.isDeleted ? (
+            <Box
+              p="16px"
+              bg="var(--wa-bg-panel)"
+              borderTop="1px solid var(--wa-border)"
+              display="flex"
+              flexDir="column"
+              alignItems="center"
+              justifyContent="center"
+              gap="10px"
+            >
+              <Text fontSize="13.5px" color="var(--wa-text-secondary)" textAlign="center">
+                🚫 You can no longer send messages to this conversation because the account was deleted.
+              </Text>
+              <Button
                 size="sm"
-                variant="ghost"
-                fontSize="18px"
-                icon={<span>😀</span>}
-                onClick={() => setShowEmojis(!showEmojis)}
-                color="var(--wa-text-secondary)"
-                _hover={{ color: "var(--wa-text-primary)", bg: "transparent" }}
-                aria-label="Emojis"
-              />
-            </Tooltip>
-
-            {/* Attachment Paperclip Button */}
-            <Tooltip label="Attach photo" hasArrow>
-              <IconButton
-                size="sm"
-                variant="ghost"
-                icon={<AttachmentIcon />}
-                onClick={() => fileInputRef.current?.click()}
-                color="var(--wa-text-secondary)"
-                _hover={{ color: "var(--wa-text-primary)", bg: "transparent" }}
-                aria-label="Attach photo"
-              />
-            </Tooltip>
-
-            {/* If Recording: Show Audio Recording Controls */}
-            {isRecording ? (
-              <Box
-                flex="1"
-                display="flex"
-                alignItems="center"
-                justifyContent="space-between"
-                bg="var(--wa-input-bg)"
-                borderRadius="8px"
-                px="14px"
-                py="6px"
+                colorScheme="red"
+                variant="outline"
+                leftIcon={<DeleteIcon />}
+                onClick={handleDeleteChat}
               >
-                <Box display="flex" alignItems="center">
-                  <span className="wa-rec-dot" />
-                  <Text fontSize="14px" fontWeight="600" color="#EF4444">
-                    {formatRecSeconds(recordingSeconds)}
-                  </Text>
-                </Box>
-                <Box display="flex" gap="8px">
-                  <IconButton
-                    size="xs"
-                    colorScheme="red"
-                    variant="ghost"
-                    icon={<DeleteIcon />}
-                    onClick={() => stopRecording(false)}
-                    aria-label="Cancel recording"
-                  />
-                  <IconButton
-                    size="xs"
-                    colorScheme="teal"
-                    bg="var(--wa-accent)"
-                    icon={<ArrowForwardIcon />}
-                    onClick={() => stopRecording(true)}
-                    aria-label="Send voice note"
-                  />
-                </Box>
-              </Box>
-            ) : (
-              /* Regular Text Input */
-              <FormControl onKeyDown={sendMessage} flex="1">
-                <Input
-                  placeholder="Type a message"
-                  value={newMessage}
-                  onChange={typingHandler}
-                  bg="var(--wa-input-bg)"
-                  color="var(--wa-text-primary)"
-                  border="none"
-                  borderRadius="8px"
-                  size="md"
-                  _focus={{ boxShadow: "none" }}
-                />
-              </FormControl>
-            )}
-
-            {/* Send or Mic Button */}
-            {newMessage.trim() ? (
-              <IconButton
-                size="md"
-                borderRadius="full"
-                colorScheme="teal"
-                bg="var(--wa-accent)"
-                _hover={{ bg: "var(--wa-accent-light)" }}
-                icon={<ArrowForwardIcon />}
-                onClick={sendMessage}
-                aria-label="Send message"
+                Delete Chat Conversation
+              </Button>
+            </Box>
+          ) : (
+            <Box
+              p="8px 16px"
+              bg="var(--wa-bg-panel)"
+              display="flex"
+              alignItems="center"
+              gap="8px"
+              borderTop="1px solid var(--wa-border)"
+            >
+              {/* Hidden File Input for Image Attachment */}
+              <input
+                type="file"
+                ref={fileInputRef}
+                accept="image/*"
+                style={{ display: "none" }}
+                onChange={handleImageSelect}
               />
-            ) : !isRecording ? (
-              <Tooltip label="Hold or click to record voice note" hasArrow>
+
+              {/* Emoji Trigger */}
+              <Tooltip label="Emojis" hasArrow>
+                <IconButton
+                  size="sm"
+                  variant="ghost"
+                  fontSize="18px"
+                  icon={<span>😀</span>}
+                  onClick={() => setShowEmojis(!showEmojis)}
+                  color="var(--wa-text-secondary)"
+                  _hover={{ color: "var(--wa-text-primary)", bg: "transparent" }}
+                  aria-label="Emojis"
+                />
+              </Tooltip>
+
+              {/* Attachment Paperclip Button */}
+              <Tooltip label="Attach photo" hasArrow>
+                <IconButton
+                  size="sm"
+                  variant="ghost"
+                  icon={<AttachmentIcon />}
+                  onClick={() => fileInputRef.current?.click()}
+                  color="var(--wa-text-secondary)"
+                  _hover={{ color: "var(--wa-text-primary)", bg: "transparent" }}
+                  aria-label="Attach photo"
+                />
+              </Tooltip>
+
+              {/* If Recording: Show Audio Recording Controls */}
+              {isRecording ? (
+                <Box
+                  flex="1"
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="space-between"
+                  bg="var(--wa-input-bg)"
+                  borderRadius="8px"
+                  px="14px"
+                  py="6px"
+                >
+                  <Box display="flex" alignItems="center">
+                    <span className="wa-rec-dot" />
+                    <Text fontSize="14px" fontWeight="600" color="#EF4444">
+                      {formatRecSeconds(recordingSeconds)}
+                    </Text>
+                  </Box>
+                  <Box display="flex" gap="8px">
+                    <IconButton
+                      size="xs"
+                      colorScheme="red"
+                      variant="ghost"
+                      icon={<DeleteIcon />}
+                      onClick={() => stopRecording(false)}
+                      aria-label="Cancel recording"
+                    />
+                    <IconButton
+                      size="xs"
+                      colorScheme="teal"
+                      bg="var(--wa-accent)"
+                      icon={<ArrowForwardIcon />}
+                      onClick={() => stopRecording(true)}
+                      aria-label="Send voice note"
+                    />
+                  </Box>
+                </Box>
+              ) : (
+                /* Regular Text Input */
+                <FormControl onKeyDown={sendMessage} flex="1">
+                  <Input
+                    placeholder="Type a message"
+                    value={newMessage}
+                    onChange={typingHandler}
+                    bg="var(--wa-input-bg)"
+                    color="var(--wa-text-primary)"
+                    border="none"
+                    borderRadius="8px"
+                    size="md"
+                    _focus={{ boxShadow: "none" }}
+                  />
+                </FormControl>
+              )}
+
+              {/* Send or Mic Button */}
+              {newMessage.trim() ? (
                 <IconButton
                   size="md"
                   borderRadius="full"
-                  variant="ghost"
-                  color="var(--wa-text-secondary)"
-                  _hover={{ bg: "var(--wa-bg-hover)", color: "var(--wa-accent)" }}
-                  icon={<span style={{ fontSize: "17px" }}>🎤</span>}
-                  onClick={startRecording}
-                  aria-label="Voice Note"
+                  colorScheme="teal"
+                  bg="var(--wa-accent)"
+                  _hover={{ bg: "var(--wa-accent-light)" }}
+                  icon={<ArrowForwardIcon />}
+                  onClick={sendMessage}
+                  aria-label="Send message"
                 />
-              </Tooltip>
-            ) : null}
-          </Box>
+              ) : !isRecording ? (
+                <Tooltip label="Hold or click to record voice note" hasArrow>
+                  <IconButton
+                    size="md"
+                    borderRadius="full"
+                    variant="ghost"
+                    color="var(--wa-text-secondary)"
+                    _hover={{ bg: "var(--wa-bg-hover)", color: "var(--wa-accent)" }}
+                    icon={<span style={{ fontSize: "17px" }}>🎤</span>}
+                    onClick={startRecording}
+                    aria-label="Voice Note"
+                  />
+                </Tooltip>
+              ) : null}
+            </Box>
+          )}
         </Box>
       ) : (
         /* Empty Chat Placeholder (WhatsApp Web style) */

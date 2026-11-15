@@ -109,6 +109,18 @@ const removeFromGroup = asyncHandler(async (req, res) => {
   }
 });
 
+const deleteChat = asyncHandler(async (req, res) => {
+  const { chatId } = req.params;
+
+  try {
+    await storageService.deleteChat(chatId, req.user._id);
+    res.json({ message: "Chat deleted successfully" });
+  } catch (error) {
+    res.status(error.statusCode || 400);
+    throw new Error(error.message || "Failed to delete chat");
+  }
+});
+
 module.exports = {
   accessChat,
   fetchChats,
@@ -116,4 +128,5 @@ module.exports = {
   renameGroup,
   addToGroup,
   removeFromGroup,
+  deleteChat,
 };

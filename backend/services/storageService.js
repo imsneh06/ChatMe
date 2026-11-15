@@ -220,6 +220,102 @@ class StorageService {
     };
   }
 
+  async deleteUser(userId) {
+    const mode = this.getMode();
+    const uId = String(userId);
+
+    if (mode === "mongodb") {
+      await User.findByIdAndDelete(userId);
+      await Chat.updateMany(
+        { isGroupChat: true, users: userId },
+        { $pull: { users: userId } }
+      );
+      return true;
+    }
+
+    if (mode === "upstash") {
+      const user = await this.findUserById(uId);
+      if (user) {
+        if (user.email) {
+          await this.upstashClient.del(`user:email:${user.email.toLowerCase().trim()}`);
+        }
+        await this.upstashClient.del(`user:${uId}`);
+        await this.upstashClient.srem("users:all", uId);
+      }
+
+      // Update chats where user participated
+      const chatIds = await this.upstashClient.smembers(`user:chats:${uId}`) || [];
+      for (const cid of chatIds) {
+        const raw = await this.upstashClient.get(`chat:${cid}`);
+        if (raw) {
+          const chat = typeof raw === "string" ? JSON.parse(raw) : raw;
+          if (chat.isGroupChat) {
+            chat.users = (chat.users || []).filter((u) => String(u._id) !== uId);
+          } else {
+            chat.users = (chat.users || []).map((u) =>
+              String(u._id) === uId
+                ? { _id: uId, name: "Deleted User", email: "", pic: "", isDeleted: true }
+                : u
+            );
+          }
+          await this.upstashClient.set(`chat:${cid}`, JSON.stringify(chat));
+        }
+      }
+      await this.upstashClient.del(`user:chats:${uId}`);
+      return true;
+    }
+
+    // Memory mode
+    const user = this.memoryUsers.get(uId);
+    if (user) {
+      if (user.email) {
+        this.memoryUsersByEmail.delete(user.email.toLowerCase().trim());
+      }
+      this.memoryUsers.delete(uId);
+    }
+
+    for (const [cid, chat] of this.memoryChats.entries()) {
+      if (chat.isGroupChat) {
+        chat.users = (chat.users || []).filter((u) => String(u._id) !== uId);
+      } else if (chat.users?.some((u) => String(u._id) === uId)) {
+        chat.users = chat.users.map((u) =>
+          String(u._id) === uId
+            ? { _id: uId, name: "Deleted User", email: "", pic: "", isDeleted: true }
+            : u
+        );
+      }
+    }
+    return true;
+  }
+
+  async deleteChat(chatId, userId) {
+    const mode = this.getMode();
+    const cId = String(chatId);
+    const uId = String(userId);
+
+    if (mode === "mongodb") {
+      await Chat.findByIdAndDelete(chatId);
+      await Message.deleteMany({ chat: chatId });
+      return true;
+    }
+
+    if (mode === "upstash") {
+      await this.upstashClient.del(`chat:${cId}`);
+      await this.upstashClient.srem(`user:chats:${uId}`, cId);
+      const msgIds = (await this.upstashClient.lrange(`chat:messages:${cId}`, 0, -1)) || [];
+      for (const mid of msgIds) {
+        await this.upstashClient.del(`message:${mid}`);
+      }
+      await this.upstashClient.del(`chat:messages:${cId}`);
+      return true;
+    }
+
+    // Memory mode
+    this.memoryChats.delete(cId);
+    this.memoryChatMessages.delete(cId);
+    return true;
+  }
+
   async findUserByEmail(email) {
     if (!email) return null;
     const cleanEmail = email.toLowerCase().trim();

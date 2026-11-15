@@ -184,13 +184,19 @@ const MyChats = ({ fetchAgain }) => {
                         color="var(--wa-text-secondary)"
                         isTruncated
                       >
-                        {chat.latestMessage
-                          ? `${
-                              chat.isGroupChat
-                                ? `${chat.latestMessage.sender?.name || ""}: `
-                                : ""
-                            }${chat.latestMessage.content}`
-                          : "Tap to chat"}
+                        {otherUser?.isDeleted ? (
+                          <span style={{ color: "#EF4444", fontStyle: "italic", fontSize: "12.5px" }}>
+                            Account Deleted
+                          </span>
+                        ) : chat.latestMessage ? (
+                          `${
+                            chat.isGroupChat
+                              ? `${chat.latestMessage.sender?.name || ""}: `
+                              : ""
+                          }${chat.latestMessage.content}`
+                        ) : (
+                          "Tap to chat"
+                        )}
                       </Text>
                     </Box>
                   </Box>

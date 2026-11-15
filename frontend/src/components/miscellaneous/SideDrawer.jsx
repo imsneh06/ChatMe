@@ -215,34 +215,41 @@ const SideDrawer = () => {
 
           {/* Notifications */}
           <Menu>
-            <MenuButton
-              as={IconButton}
-              size="sm"
-              variant="ghost"
-              icon={<BellIcon fontSize="18px" />}
-              color="var(--wa-text-secondary)"
-              _hover={{ bg: "var(--wa-bg-hover)", color: "var(--wa-text-primary)" }}
-              position="relative"
-              aria-label="Notifications"
-            />
-            {notification && notification.length > 0 && (
-              <span
-                style={{
-                  position: "absolute",
-                  top: "6px",
-                  right: "60px",
-                  backgroundColor: "var(--wa-badge)",
-                  color: "white",
-                  borderRadius: "50%",
-                  padding: "1px 5px",
-                  fontSize: "10px",
-                  fontWeight: "bold",
-                  pointerEvents: "none",
-                }}
-              >
-                {notification.length}
-              </span>
-            )}
+            <Box position="relative" display="inline-flex">
+              <MenuButton
+                as={IconButton}
+                size="sm"
+                variant="ghost"
+                icon={<BellIcon fontSize="18px" />}
+                color="var(--wa-text-secondary)"
+                _hover={{ bg: "var(--wa-bg-hover)", color: "var(--wa-text-primary)" }}
+                aria-label="Notifications"
+              />
+              {notification && notification.length > 0 && (
+                <Box
+                  position="absolute"
+                  top="-2px"
+                  right="-2px"
+                  bg="var(--wa-badge)"
+                  color="white"
+                  borderRadius="full"
+                  minW="18px"
+                  h="18px"
+                  px="4px"
+                  fontSize="11px"
+                  fontWeight="bold"
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="center"
+                  pointerEvents="none"
+                  border="2px solid var(--wa-bg-panel)"
+                  boxShadow="0 1px 3px rgba(0,0,0,0.3)"
+                  zIndex={2}
+                >
+                  {notification.length > 99 ? "99+" : notification.length}
+                </Box>
+              )}
+            </Box>
             <MenuList bg="var(--wa-bg-panel)" borderColor="var(--wa-border)">
               {!notification.length && (
                 <MenuItem bg="var(--wa-bg-panel)" color="var(--wa-text-secondary)">

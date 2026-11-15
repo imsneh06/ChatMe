@@ -65,4 +65,23 @@ const allUsers = asyncHandler(async (req, res) => {
   res.send(users);
 });
 
-module.exports = { registerUser, authUser, allUsers };
+const deleteUserProfile = asyncHandler(async (req, res) => {
+  const userId = req.user._id;
+
+  try {
+    await storageService.deleteUser(userId);
+
+    const io = req.app.get("io");
+    if (io) {
+      io.emit("user deleted", String(userId));
+      io.emit("user offline", String(userId));
+    }
+
+    res.json({ message: "User account deleted successfully" });
+  } catch (error) {
+    res.status(error.statusCode || 500);
+    throw new Error(error.message || "Failed to delete account");
+  }
+});
+
+module.exports = { registerUser, authUser, allUsers, deleteUserProfile };

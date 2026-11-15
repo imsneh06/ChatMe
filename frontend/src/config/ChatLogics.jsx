@@ -31,19 +31,23 @@ export const isSameSender = (messages, m, i, userId) => {
 };
 
 export const getSender = (loggedUser, users) => {
-  if (!users || !Array.isArray(users) || users.length === 0) return "Unknown";
-  if (users.length === 1) return users[0]?.name || "Unknown";
-  const loggedId = loggedUser?._id;
-  const u0Id = users[0]?._id;
-  return String(u0Id) === String(loggedId) ? users[1]?.name || "" : users[0]?.name || "";
+  if (!users || !Array.isArray(users) || users.length === 0) return "Deleted User";
+  const loggedId = String(loggedUser?._id);
+  const other = users.find((u) => String(u?._id || u) !== loggedId);
+  if (!other || other.isDeleted || other.name === "Deleted User") return "Deleted User";
+  return other.name || "Deleted User";
 };
 
 export const getSenderDetails = (loggedUser, users) => {
-  if (!users || !Array.isArray(users) || users.length === 0) return {};
-  if (users.length === 1) return users[0] || {};
-  const loggedId = loggedUser?._id;
-  const u0Id = users[0]?._id;
-  return String(u0Id) === String(loggedId) ? users[1] || {} : users[0] || {};
+  if (!users || !Array.isArray(users) || users.length === 0) {
+    return { name: "Deleted User", pic: "", isDeleted: true };
+  }
+  const loggedId = String(loggedUser?._id);
+  const other = users.find((u) => String(u?._id || u) !== loggedId);
+  if (!other || other.isDeleted) {
+    return { name: "Deleted User", pic: "", isDeleted: true };
+  }
+  return other;
 };
 
 export const isLastMessage = (messages, i, userId) => {
