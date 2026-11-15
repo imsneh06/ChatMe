@@ -10,6 +10,8 @@ const ChatBox = ({ fetchAgain, setFetchAgain }) => {
     <Box
       display={{ base: selectedChat ? "flex" : "none", md: "flex" }}
       flex="1"
+      minW="0"
+      w={{ base: "100%", md: "auto" }}
       h="100%"
       overflow="hidden"
       flexDir="column"

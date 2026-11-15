@@ -30,24 +30,31 @@ export const isSameSender = (messages, m, i, userId) => {
   );
 };
 
-export const getSender = (loggedUser, users) => {
-  if (!users || !Array.isArray(users) || users.length === 0) return "Deleted User";
-  const loggedId = String(loggedUser?._id);
-  const other = users.find((u) => String(u?._id || u) !== loggedId);
-  if (!other || other.isDeleted || other.name === "Deleted User") return "Deleted User";
-  return other.name || "Deleted User";
-};
-
 export const getSenderDetails = (loggedUser, users) => {
   if (!users || !Array.isArray(users) || users.length === 0) {
-    return { name: "Deleted User", pic: "", isDeleted: true };
+    return { name: "Chat User", pic: "", isDeleted: false };
   }
-  const loggedId = String(loggedUser?._id);
-  const other = users.find((u) => String(u?._id || u) !== loggedId);
-  if (!other || other.isDeleted) {
-    return { name: "Deleted User", pic: "", isDeleted: true };
+  const loggedId = String(loggedUser?._id || "");
+  const other = users.find((u) => String(u?._id || u) !== loggedId) || users[0];
+  if (!other) {
+    return { name: "Chat User", pic: "", isDeleted: false };
   }
-  return other;
+  if (typeof other === "string") {
+    return { _id: other, name: "Chat User", pic: "", isDeleted: false };
+  }
+  return {
+    ...other,
+    _id: other._id || other,
+    name: other.name || "Chat User",
+    pic: other.pic || "",
+    isDeleted: Boolean(other.isDeleted),
+  };
+};
+
+export const getSender = (loggedUser, users) => {
+  if (!users || !Array.isArray(users) || users.length === 0) return "Chat User";
+  const details = getSenderDetails(loggedUser, users);
+  return details.isDeleted ? "Account deleted" : details.name || "Chat User";
 };
 
 export const isLastMessage = (messages, i, userId) => {

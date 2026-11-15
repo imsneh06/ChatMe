@@ -161,7 +161,7 @@ const SideDrawer = () => {
   return (
     <>
       <Box
-        display="flex"
+        display={{ base: selectedChat ? "none" : "flex", md: "flex" }}
         justifyContent="space-between"
         alignItems="center"
         bg="var(--wa-bg-panel)"

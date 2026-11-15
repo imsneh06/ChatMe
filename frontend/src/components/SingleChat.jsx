@@ -589,14 +589,16 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
         <Box display="flex" flexDir="column" w="100%" h="100%" overflow="hidden">
           {/* WhatsApp Chat Header */}
           <Box
-            p="10px 16px"
+            p={{ base: "8px 10px", md: "10px 16px" }}
             bg="var(--wa-bg-panel)"
             display="flex"
             justifyContent="space-between"
             alignItems="center"
             borderBottom="1px solid var(--wa-border)"
+            w="100%"
+            minW="0"
           >
-            <Box display="flex" alignItems="center" gap="12px">
+            <Box display="flex" alignItems="center" gap={{ base: "8px", md: "12px" }} minW="0" flex="1" mr="6px">
               <IconButton
                 display={{ base: "flex", md: "none" }}
                 icon={<ArrowBackIcon />}
@@ -605,6 +607,8 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
                 size="sm"
                 color="var(--wa-text-secondary)"
                 aria-label="Back to chats"
+                minW="28px"
+                p="0"
               />
 
               <Avatar
@@ -615,25 +619,27 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
                     : selectedChat.chatName
                 }
                 src={otherUser?.pic}
+                flexShrink={0}
               >
                 {isOnline && (
                   <AvatarBadge boxSize="1em" bg="var(--wa-accent-light)" />
                 )}
               </Avatar>
 
-              <Box>
+              <Box minW="0" flex="1">
                 <Text
-                  fontSize="16px"
+                  fontSize={{ base: "15px", md: "16px" }}
                   fontWeight="600"
                   color="var(--wa-text-primary)"
                   lineHeight="1.2"
+                  isTruncated
                 >
                   {!selectedChat.isGroupChat
                     ? getSender(user, selectedChat.users)
                     : selectedChat.chatName}
                 </Text>
 
-                <Text fontSize="12px" color="var(--wa-text-secondary)">
+                <Text fontSize="12px" color="var(--wa-text-secondary)" isTruncated>
                   {isTyping ? (
                     <span style={{ color: "var(--wa-accent-light)", fontStyle: "italic", fontWeight: "600" }}>
                       typing...
@@ -655,63 +661,9 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
               </Box>
             </Box>
 
-            <Box display="flex" alignItems="center" gap="4px">
-              {/* Disappearing Messages menu */}
-              <Menu>
-                <Tooltip
-                  label={`Disappearing messages: ${
-                    selectedChat.disappearingTimer === 86400
-                      ? "24 hours"
-                      : selectedChat.disappearingTimer === 604800
-                      ? "7 days"
-                      : "Off"
-                  }`}
-                  hasArrow
-                >
-                  <MenuButton
-                    as={IconButton}
-                    aria-label="Disappearing Messages"
-                    icon={<WaClockIcon size={18} />}
-                    size="sm"
-                    variant="ghost"
-                    color={
-                      selectedChat.disappearingTimer > 0
-                        ? "var(--wa-accent-light)"
-                        : "var(--wa-icon-gray)"
-                    }
-                    _hover={{ bg: "var(--wa-hover-bg)" }}
-                  />
-                </Tooltip>
-                <MenuList bg="var(--wa-bg-panel)" borderColor="var(--wa-border)">
-                  <MenuItem
-                    bg="var(--wa-bg-panel)"
-                    color="var(--wa-text-primary)"
-                    _hover={{ bg: "var(--wa-bg-hover)" }}
-                    onClick={() => handleSetDisappearing(0)}
-                  >
-                    Off {!selectedChat.disappearingTimer && " ✓"}
-                  </MenuItem>
-                  <MenuItem
-                    bg="var(--wa-bg-panel)"
-                    color="var(--wa-text-primary)"
-                    _hover={{ bg: "var(--wa-bg-hover)" }}
-                    onClick={() => handleSetDisappearing(86400)}
-                  >
-                    24 Hours {selectedChat.disappearingTimer === 86400 && " ✓"}
-                  </MenuItem>
-                  <MenuItem
-                    bg="var(--wa-bg-panel)"
-                    color="var(--wa-text-primary)"
-                    _hover={{ bg: "var(--wa-bg-hover)" }}
-                    onClick={() => handleSetDisappearing(604800)}
-                  >
-                    7 Days {selectedChat.disappearingTimer === 604800 && " ✓"}
-                  </MenuItem>
-                </MenuList>
-              </Menu>
-
-              {/* 1-on-1 WebRTC Voice & Video Calling */}
-              {!selectedChat.isGroupChat && !otherUser?.isDeleted && !otherUser?.isAi && (
+            <Box display="flex" alignItems="center" gap={{ base: "2px", md: "4px" }} flexShrink={0}>
+              {/* 1-on-1 WebRTC Voice & Video Calling (Always visible for 1-on-1 chats) */}
+              {!selectedChat.isGroupChat && !otherUser?.isDeleted && (
                 <>
                   <Tooltip label="Voice Call" hasArrow>
                     <IconButton
@@ -739,35 +691,94 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
                 </>
               )}
 
-              <Tooltip label={showSearch ? "Close search" : "Search in chat"} hasArrow>
-                <IconButton
-                  aria-label="Search chat"
-                  icon={<WaSearchIcon size={18} />}
-                  size="sm"
-                  variant="ghost"
-                  color={showSearch ? "var(--wa-accent)" : "var(--wa-icon-gray)"}
-                  _hover={{ bg: "var(--wa-hover-bg)" }}
-                  onClick={() => {
-                    setShowSearch(!showSearch);
-                    if (showSearch) setSearchQuery("");
-                  }}
-                />
-              </Tooltip>
+              {/* Desktop Direct Buttons */}
+              <Box display={{ base: "none", md: "flex" }} alignItems="center" gap="4px">
+                {/* Disappearing Messages menu */}
+                <Menu>
+                  <Tooltip
+                    label={`Disappearing messages: ${
+                      selectedChat.disappearingTimer === 86400
+                        ? "24 hours"
+                        : selectedChat.disappearingTimer === 604800
+                        ? "7 days"
+                        : "Off"
+                    }`}
+                    hasArrow
+                  >
+                    <MenuButton
+                      as={IconButton}
+                      aria-label="Disappearing Messages"
+                      icon={<WaClockIcon size={18} />}
+                      size="sm"
+                      variant="ghost"
+                      color={
+                        selectedChat.disappearingTimer > 0
+                          ? "var(--wa-accent-light)"
+                          : "var(--wa-icon-gray)"
+                      }
+                      _hover={{ bg: "var(--wa-hover-bg)" }}
+                    />
+                  </Tooltip>
+                  <MenuList bg="var(--wa-bg-panel)" borderColor="var(--wa-border)">
+                    <MenuItem
+                      bg="var(--wa-bg-panel)"
+                      color="var(--wa-text-primary)"
+                      _hover={{ bg: "var(--wa-bg-hover)" }}
+                      onClick={() => handleSetDisappearing(0)}
+                    >
+                      Off {!selectedChat.disappearingTimer && " ✓"}
+                    </MenuItem>
+                    <MenuItem
+                      bg="var(--wa-bg-panel)"
+                      color="var(--wa-text-primary)"
+                      _hover={{ bg: "var(--wa-bg-hover)" }}
+                      onClick={() => handleSetDisappearing(86400)}
+                    >
+                      24 Hours {selectedChat.disappearingTimer === 86400 && " ✓"}
+                    </MenuItem>
+                    <MenuItem
+                      bg="var(--wa-bg-panel)"
+                      color="var(--wa-text-primary)"
+                      _hover={{ bg: "var(--wa-bg-hover)" }}
+                      onClick={() => handleSetDisappearing(604800)}
+                    >
+                      7 Days {selectedChat.disappearingTimer === 604800 && " ✓"}
+                    </MenuItem>
+                  </MenuList>
+                </Menu>
 
-              <Tooltip label="Delete Chat" hasArrow>
-                <IconButton
-                  aria-label="Delete chat"
-                  icon={<WaDeleteIcon size={18} />}
-                  size="sm"
-                  variant="ghost"
-                  color="var(--wa-icon-gray)"
-                  _hover={{ bg: "var(--wa-hover-bg)", color: "#EF4444" }}
-                  onClick={handleDeleteChat}
-                />
-              </Tooltip>
+                <Tooltip label={showSearch ? "Close search" : "Search in chat"} hasArrow>
+                  <IconButton
+                    aria-label="Search chat"
+                    icon={<WaSearchIcon size={18} />}
+                    size="sm"
+                    variant="ghost"
+                    color={showSearch ? "var(--wa-accent)" : "var(--wa-icon-gray)"}
+                    _hover={{ bg: "var(--wa-hover-bg)" }}
+                    onClick={() => {
+                      setShowSearch(!showSearch);
+                      if (showSearch) setSearchQuery("");
+                    }}
+                  />
+                </Tooltip>
+
+                <Tooltip label="Delete Chat" hasArrow>
+                  <IconButton
+                    aria-label="Delete chat"
+                    icon={<WaDeleteIcon size={18} />}
+                    size="sm"
+                    variant="ghost"
+                    color="var(--wa-icon-gray)"
+                    _hover={{ bg: "var(--wa-hover-bg)", color: "#EF4444" }}
+                    onClick={handleDeleteChat}
+                  />
+                </Tooltip>
+              </Box>
 
               {!selectedChat.isGroupChat ? (
-                <Profile user={getSenderDetails(user, selectedChat.users)} />
+                <Box display={{ base: "none", md: "block" }}>
+                  <Profile user={getSenderDetails(user, selectedChat.users)} />
+                </Box>
               ) : (
                 <UpdateGroupChatModal
                   fetchAgain={fetchAgain}
@@ -775,6 +786,50 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
                   fetchMessages={fetchMessages}
                 />
               )}
+
+              {/* Mobile 3-Dots Overflow Menu (WhatsApp Mobile style) */}
+              <Box display={{ base: "block", md: "none" }}>
+                <Menu>
+                  <MenuButton
+                    as={IconButton}
+                    aria-label="More options"
+                    icon={<Text fontSize="18px" fontWeight="bold">⋮</Text>}
+                    size="sm"
+                    variant="ghost"
+                    color="var(--wa-icon-gray)"
+                    _hover={{ bg: "var(--wa-hover-bg)" }}
+                  />
+                  <MenuList bg="var(--wa-bg-panel)" borderColor="var(--wa-border)" minW="190px">
+                    <MenuItem
+                      bg="var(--wa-bg-panel)"
+                      color="var(--wa-text-primary)"
+                      _hover={{ bg: "var(--wa-bg-hover)" }}
+                      onClick={() => {
+                        setShowSearch(!showSearch);
+                        if (showSearch) setSearchQuery("");
+                      }}
+                    >
+                      {showSearch ? "Close search" : "Search in chat"}
+                    </MenuItem>
+                    <MenuItem
+                      bg="var(--wa-bg-panel)"
+                      color="var(--wa-text-primary)"
+                      _hover={{ bg: "var(--wa-bg-hover)" }}
+                      onClick={() => handleSetDisappearing(selectedChat.disappearingTimer === 86400 ? 0 : 86400)}
+                    >
+                      Disappearing ({selectedChat.disappearingTimer === 86400 ? "24h" : selectedChat.disappearingTimer === 604800 ? "7d" : "Off"})
+                    </MenuItem>
+                    <MenuItem
+                      bg="var(--wa-bg-panel)"
+                      color="#EF4444"
+                      _hover={{ bg: "var(--wa-bg-hover)" }}
+                      onClick={handleDeleteChat}
+                    >
+                      Delete Chat
+                    </MenuItem>
+                  </MenuList>
+                </Menu>
+              </Box>
             </Box>
           </Box>
 

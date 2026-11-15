@@ -12,6 +12,21 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
 
     <title>ChatMe</title>
+    <!-- SPA route restore on direct URL visit or refresh -->
+    <script type="text/javascript">
+      (function(l) {
+        if (!l.search) return;
+        var query = l.search.slice(1);
+        var parts = query.split('&');
+        var pPart = parts.find(function(p) { return p.indexOf('p=/') === 0; });
+        var qPart = parts.find(function(p) { return p.indexOf('q=') === 0; });
+        if (pPart) {
+          var path = pPart.slice(2);
+          var search = qPart ? '?' + qPart.slice(2).replace(/~and~/g, '&') : '';
+          window.history.replaceState(null, null, path + search + l.hash);
+        }
+      })(window.location);
+    </script>
   </head>
   <body>
     <div id="root"></div>

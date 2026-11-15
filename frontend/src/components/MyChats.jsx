@@ -73,7 +73,10 @@ const MyChats = ({ fetchAgain }) => {
       display={{ base: selectedChat ? "none" : "flex", md: "flex" }}
       flexDir="column"
       bg="var(--wa-bg-main)"
-      w={{ base: "100%", md: "380px", lg: "420px" }}
+      w={{ base: "100%", md: "360px", lg: "400px" }}
+      minW={{ md: "320px", lg: "360px" }}
+      maxW={{ md: "420px", lg: "460px" }}
+      flexShrink={0}
       h="100%"
       borderRight="1px solid var(--wa-border)"
       overflow="hidden"

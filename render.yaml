@@ -1,0 +1,9 @@
+services:
+  - type: static
+    name: chatme-frontend
+    buildCommand: npm install --prefix frontend && npm run build --prefix frontend
+    staticPublishPath: ./frontend/dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
