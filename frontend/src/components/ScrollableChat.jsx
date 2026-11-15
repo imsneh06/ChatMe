@@ -7,6 +7,7 @@ import { Image, Box, Text, Flex } from "@chakra-ui/react";
 import { FaLock, FaClock } from "react-icons/fa";
 import { BsStars } from "react-icons/bs";
 import { decryptE2EEMessage } from "../utils/crypto.js";
+import { WaReplyIcon, WaDeleteIcon } from "./icons/WhatsAppIcons.jsx";
 
 const DecryptedTextMessage = ({ content, myPrivateKeyJwk, peerPublicKeyJwk }) => {
   const [displayText, setDisplayText] = useState(() => {
@@ -214,16 +215,18 @@ const ScrollableChat = ({ messages, isGroupChat, onReply, onReaction, onDelete }
                     className="wa-action-btn"
                     title="Reply"
                     onClick={() => onReply && onReply(m)}
+                    style={{ display: "inline-flex", alignItems: "center", justifyContent: "center" }}
                   >
-                    ↩️
+                    <WaReplyIcon size={14} color="var(--wa-text-secondary)" />
                   </button>
                   {isSender && (
                     <button
                       className="wa-action-btn"
                       title="Delete message"
                       onClick={() => onDelete && onDelete(m._id)}
+                      style={{ display: "inline-flex", alignItems: "center", justifyContent: "center" }}
                     >
-                      🗑️
+                      <WaDeleteIcon size={14} color="#EF4444" />
                     </button>
                   )}
                 </div>

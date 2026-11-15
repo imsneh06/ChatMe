@@ -4,19 +4,17 @@ import {
   Flex,
   Text,
   Avatar,
-  IconButton,
-  Button,
   Badge,
 } from "@chakra-ui/react";
 import {
-  FaPhoneAlt,
-  FaPhoneSlash,
-  FaMicrophone,
-  FaMicrophoneSlash,
-  FaVideo,
-  FaVideoSlash,
-  FaLock,
-} from "react-icons/fa";
+  WaPhoneIcon,
+  WaPhoneHangupIcon,
+  WaVideoIcon,
+  WaVideoOffIcon,
+  WaMicIcon,
+  WaMicMutedIcon,
+} from "./icons/WhatsAppIcons.jsx";
+import { FaLock } from "react-icons/fa";
 
 const CallModal = ({
   callState,
@@ -93,13 +91,13 @@ const CallModal = ({
       left="0"
       w="100vw"
       h="100vh"
-      bg="rgba(11, 20, 26, 0.94)"
-      backdropFilter="blur(10px)"
+      bg="rgba(11, 20, 26, 0.95)"
+      backdropFilter="blur(14px)"
       zIndex={9999}
       display="flex"
       alignItems="center"
       justifyContent="center"
-      p="20px"
+      p="16px"
     >
       {/* Hidden audio element for remote stream in voice calls */}
       <audio ref={remoteAudioRef} autoPlay playsInline />
@@ -107,14 +105,14 @@ const CallModal = ({
       <Box
         position="relative"
         w="100%"
-        maxW={isVideo && callAccepted ? "860px" : "440px"}
-        h={isVideo && callAccepted ? "80vh" : "auto"}
-        minH={isVideo && callAccepted ? "500px" : "420px"}
+        maxW={isVideo && callAccepted ? "880px" : "420px"}
+        h={isVideo && callAccepted ? "82vh" : "auto"}
+        minH={isVideo && callAccepted ? "520px" : "460px"}
         bg="var(--wa-bg-panel, #111b21)"
-        borderRadius="16px"
+        borderRadius="20px"
         overflow="hidden"
-        boxShadow="0 20px 40px rgba(0,0,0,0.6)"
-        border="1px solid var(--wa-border, rgba(255,255,255,0.1))"
+        boxShadow="0 24px 50px rgba(0, 0, 0, 0.75)"
+        border="1px solid rgba(255, 255, 255, 0.08)"
         display="flex"
         flexDirection="column"
         justifyContent="space-between"
@@ -123,38 +121,52 @@ const CallModal = ({
         <Flex
           justify="space-between"
           align="center"
-          p="16px 20px"
-          bg="rgba(17, 27, 33, 0.85)"
+          px="22px"
+          py="16px"
+          bg="rgba(17, 27, 33, 0.9)"
           borderBottom="1px solid rgba(255, 255, 255, 0.06)"
           zIndex={10}
         >
-          <Flex align="center" gap="10px">
-            <FaLock color="var(--wa-accent-light, #25D366)" fontSize="13px" />
-            <Text fontSize="12px" color="var(--wa-text-secondary, #8696a0)" fontWeight="500">
+          <Flex align="center" gap="8px">
+            <FaLock color="#25D366" fontSize="12px" />
+            <Text fontSize="12.5px" color="var(--wa-text-secondary, #8696a0)" fontWeight="500">
               End-to-End Encrypted
             </Text>
           </Flex>
 
-          {callAccepted && (
+          {callAccepted ? (
             <Badge
               bg="rgba(37, 211, 102, 0.15)"
-              color="var(--wa-accent-light, #25D366)"
+              color="#25D366"
+              px="12px"
+              py="4px"
+              borderRadius="full"
+              fontSize="12.5px"
+              fontWeight="600"
+              letterSpacing="0.5px"
+            >
+              {formatTime(callDuration)}
+            </Badge>
+          ) : (
+            <Badge
+              bg="rgba(255, 255, 255, 0.06)"
+              color="var(--wa-text-secondary, #8696a0)"
               px="10px"
               py="3px"
               borderRadius="full"
-              fontSize="12px"
+              fontSize="11.5px"
             >
-              {formatTime(callDuration)}
+              {isVideo ? "Video" : "Voice"}
             </Badge>
           )}
         </Flex>
 
-        {/* Center Content: Video or Voice View */}
+        {/* Center View */}
         <Box flex="1" position="relative" display="flex" alignItems="center" justifyContent="center">
           {/* Active Video Call */}
           {isVideo && callAccepted ? (
             <Box w="100%" h="100%" position="relative" bg="#000">
-              {/* Remote Video (Main) */}
+              {/* Remote Video Stream */}
               <video
                 ref={remoteVideoRef}
                 autoPlay
@@ -167,17 +179,17 @@ const CallModal = ({
                 }}
               />
 
-              {/* Local Video (Picture-in-Picture) */}
+              {/* Local Video Stream (Picture-in-Picture) */}
               <Box
                 position="absolute"
                 bottom="16px"
                 right="16px"
                 w="160px"
-                h="110px"
-                borderRadius="10px"
+                h="115px"
+                borderRadius="12px"
                 overflow="hidden"
-                boxShadow="0 4px 12px rgba(0,0,0,0.5)"
-                border="2px solid var(--wa-accent-light, #25D366)"
+                boxShadow="0 8px 24px rgba(0,0,0,0.6)"
+                border="2px solid #25D366"
                 bg="#1a1a1a"
                 zIndex={5}
               >
@@ -190,13 +202,13 @@ const CallModal = ({
                     width: "100%",
                     height: "100%",
                     objectFit: "cover",
-                    transform: "scaleX(-1)", // Mirror effect
+                    transform: "scaleX(-1)",
                     display: isVideoOff ? "none" : "block",
                   }}
                 />
                 {isVideoOff && (
                   <Flex w="100%" h="100%" align="center" justify="center" bg="#1f2c34">
-                    <FaVideoSlash color="#8696a0" fontSize="20px" />
+                    <WaVideoOffIcon size={24} color="#8696a0" />
                   </Flex>
                 )}
               </Box>
@@ -207,48 +219,57 @@ const CallModal = ({
               direction="column"
               align="center"
               justify="center"
-              py="30px"
-              gap="16px"
+              py="36px"
+              gap="18px"
               textAlign="center"
             >
               <Box position="relative">
                 <Box
                   position="absolute"
-                  top="-10px"
-                  left="-10px"
-                  right="-10px"
-                  bottom="-10px"
+                  top="-12px"
+                  left="-12px"
+                  right="-12px"
+                  bottom="-12px"
                   borderRadius="full"
-                  border="2px solid var(--wa-accent-light, #25D366)"
-                  opacity={callAccepted || isReceivingCall ? 0.7 : 0.2}
-                  animation="pulse 2s infinite"
+                  border="2px solid #25D366"
+                  opacity={isReceivingCall || isCalling ? 0.6 : 0.2}
+                  style={{
+                    animation: isReceivingCall || isCalling ? "waPulseRing 2s infinite ease-out" : "none",
+                  }}
                 />
                 <Avatar
                   size="2xl"
                   name={callerName || "User"}
                   src={callerPic}
-                  border="3px solid var(--wa-accent-light, #25D366)"
-                  boxShadow="0 8px 24px rgba(0,0,0,0.4)"
+                  border="3px solid #25D366"
+                  boxShadow="0 10px 30px rgba(0, 0, 0, 0.5)"
                 />
               </Box>
 
               <Box>
-                <Text fontSize="22px" fontWeight="700" color="var(--wa-text-primary, #e9edef)">
+                <Text fontSize="22px" fontWeight="700" color="var(--wa-text-primary, #e9edef)" letterSpacing="-0.3px">
                   {callerName || "User"}
                 </Text>
-                <Text fontSize="14px" color="var(--wa-text-secondary, #8696a0)" mt="4px">
-                  {isReceivingCall
-                    ? isVideo
-                      ? "Incoming Video Call..."
-                      : "Incoming Voice Call..."
-                    : isCalling
-                    ? "Calling..."
-                    : callAccepted
-                    ? isVideo
-                      ? "Video Call"
-                      : "Voice Call"
-                    : "Connecting..."}
-                </Text>
+                <Flex align="center" justify="center" gap="6px" mt="6px">
+                  {isVideo ? (
+                    <WaVideoIcon size={14} color="#25D366" />
+                  ) : (
+                    <WaPhoneIcon size={13} color="#25D366" />
+                  )}
+                  <Text fontSize="13.5px" color="var(--wa-text-secondary, #8696a0)">
+                    {isReceivingCall
+                      ? isVideo
+                        ? "Incoming WhatsApp Video Call..."
+                        : "Incoming WhatsApp Voice Call..."
+                      : isCalling
+                      ? "Calling..."
+                      : callAccepted
+                      ? isVideo
+                        ? "WhatsApp Video Call"
+                        : "WhatsApp Voice Call"
+                      : "Connecting..."}
+                  </Text>
+                </Flex>
               </Box>
             </Flex>
           )}
@@ -258,80 +279,166 @@ const CallModal = ({
         <Flex
           justify="center"
           align="center"
-          gap="18px"
-          p="20px"
-          bg="rgba(17, 27, 33, 0.9)"
+          gap="28px"
+          px="24px"
+          py="24px"
+          bg="rgba(17, 27, 33, 0.95)"
           borderTop="1px solid rgba(255, 255, 255, 0.06)"
           zIndex={10}
         >
           {isReceivingCall && !callAccepted ? (
-            /* Incoming Call Controls: Answer or Decline */
+            /* Incoming Call Controls: Decline and Accept Handsets with Labels */
             <>
-              <IconButton
-                isRound
-                size="lg"
-                bg="#EF4444"
-                _hover={{ bg: "#DC2626" }}
-                color="white"
-                icon={<FaPhoneSlash fontSize="22px" />}
-                onClick={onReject}
-                aria-label="Decline Call"
-                boxShadow="0 4px 14px rgba(239, 68, 68, 0.4)"
-              />
-              <IconButton
-                isRound
-                size="lg"
-                bg="#25D366"
-                _hover={{ bg: "#22c35e" }}
-                color="white"
-                icon={<FaPhoneAlt fontSize="22px" />}
-                onClick={onAnswer}
-                aria-label="Answer Call"
-                boxShadow="0 4px 14px rgba(37, 211, 102, 0.4)"
-              />
+              {/* Decline Call Button */}
+              <Flex direction="column" align="center" gap="8px">
+                <button
+                  onClick={onReject}
+                  aria-label="Decline Call"
+                  style={{
+                    width: "60px",
+                    height: "60px",
+                    borderRadius: "50%",
+                    background: "#EA4335",
+                    border: "none",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    boxShadow: "0 8px 24px rgba(234, 67, 53, 0.45)",
+                    transition: "transform 0.15s ease, background 0.15s ease",
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.08)")}
+                  onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+                >
+                  <WaPhoneHangupIcon size={26} color="#FFFFFF" />
+                </button>
+                <Text fontSize="12px" fontWeight="600" color="var(--wa-text-secondary, #8696a0)">
+                  Decline
+                </Text>
+              </Flex>
+
+              {/* Accept Call Button */}
+              <Flex direction="column" align="center" gap="8px">
+                <button
+                  onClick={onAnswer}
+                  aria-label="Answer Call"
+                  style={{
+                    width: "60px",
+                    height: "60px",
+                    borderRadius: "50%",
+                    background: "#25D366",
+                    border: "none",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    boxShadow: "0 8px 24px rgba(37, 211, 102, 0.5)",
+                    transition: "transform 0.15s ease, background 0.15s ease",
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.08)")}
+                  onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+                >
+                  <WaPhoneIcon size={26} color="#FFFFFF" />
+                </button>
+                <Text fontSize="12px" fontWeight="600" color="#25D366">
+                  Accept
+                </Text>
+              </Flex>
             </>
           ) : (
-            /* In-Call or Calling Controls: Mute, Video Toggle, End Call */
+            /* In-Call or Calling Controls: Mute, Camera, End Call */
             <>
               {callAccepted && (
-                <IconButton
-                  isRound
-                  size="md"
-                  variant="ghost"
-                  bg={isMuted ? "rgba(239, 68, 68, 0.2)" : "rgba(255, 255, 255, 0.1)"}
-                  color={isMuted ? "#EF4444" : "var(--wa-text-primary, #e9edef)"}
-                  _hover={{ bg: "rgba(255, 255, 255, 0.2)" }}
-                  icon={isMuted ? <FaMicrophoneSlash fontSize="18px" /> : <FaMicrophone fontSize="18px" />}
-                  onClick={onToggleMute}
-                  aria-label="Toggle Mute"
-                />
+                <Flex direction="column" align="center" gap="6px">
+                  <button
+                    onClick={onToggleMute}
+                    aria-label="Toggle Microphone"
+                    style={{
+                      width: "50px",
+                      height: "50px",
+                      borderRadius: "50%",
+                      background: isMuted ? "rgba(239, 68, 68, 0.25)" : "rgba(255, 255, 255, 0.1)",
+                      border: isMuted ? "1px solid #EF4444" : "1px solid rgba(255, 255, 255, 0.12)",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      transition: "all 0.15s ease",
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = isMuted ? "rgba(239,68,68,0.35)" : "rgba(255,255,255,0.2)")}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = isMuted ? "rgba(239,68,68,0.25)" : "rgba(255,255,255,0.1)")}
+                  >
+                    {isMuted ? (
+                      <WaMicMutedIcon size={22} color="#EF4444" />
+                    ) : (
+                      <WaMicIcon size={22} color="#e9edef" />
+                    )}
+                  </button>
+                  <Text fontSize="11px" color={isMuted ? "#EF4444" : "var(--wa-text-secondary, #8696a0)"}>
+                    {isMuted ? "Muted" : "Mute"}
+                  </Text>
+                </Flex>
               )}
 
               {isVideo && callAccepted && (
-                <IconButton
-                  isRound
-                  size="md"
-                  variant="ghost"
-                  bg={isVideoOff ? "rgba(239, 68, 68, 0.2)" : "rgba(255, 255, 255, 0.1)"}
-                  color={isVideoOff ? "#EF4444" : "var(--wa-text-primary, #e9edef)"}
-                  _hover={{ bg: "rgba(255, 255, 255, 0.2)" }}
-                  icon={isVideoOff ? <FaVideoSlash fontSize="18px" /> : <FaVideo fontSize="18px" />}
-                  onClick={onToggleVideo}
-                  aria-label="Toggle Camera"
-                />
+                <Flex direction="column" align="center" gap="6px">
+                  <button
+                    onClick={onToggleVideo}
+                    aria-label="Toggle Camera"
+                    style={{
+                      width: "50px",
+                      height: "50px",
+                      borderRadius: "50%",
+                      background: isVideoOff ? "rgba(239, 68, 68, 0.25)" : "rgba(255, 255, 255, 0.1)",
+                      border: isVideoOff ? "1px solid #EF4444" : "1px solid rgba(255, 255, 255, 0.12)",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      transition: "all 0.15s ease",
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = isVideoOff ? "rgba(239,68,68,0.35)" : "rgba(255,255,255,0.2)")}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = isVideoOff ? "rgba(239,68,68,0.25)" : "rgba(255,255,255,0.1)")}
+                  >
+                    {isVideoOff ? (
+                      <WaVideoOffIcon size={22} color="#EF4444" />
+                    ) : (
+                      <WaVideoIcon size={22} color="#e9edef" />
+                    )}
+                  </button>
+                  <Text fontSize="11px" color={isVideoOff ? "#EF4444" : "var(--wa-text-secondary, #8696a0)"}>
+                    {isVideoOff ? "Cam Off" : "Camera"}
+                  </Text>
+                </Flex>
               )}
 
-              <IconButton
-                isRound
-                size="lg"
-                bg="#EF4444"
-                _hover={{ bg: "#DC2626" }}
-                color="white"
-                icon={<FaPhoneSlash fontSize="22px" />}
-                onClick={onEnd}
-                aria-label="End Call"
-                boxShadow="0 4px 14px rgba(239, 68, 68, 0.4)"
-              />
+              {/* End Call Button */}
+              <Flex direction="column" align="center" gap="6px">
+                <button
+                  onClick={onEnd}
+                  aria-label="End Call"
+                  style={{
+                    width: "56px",
+                    height: "56px",
+                    borderRadius: "50%",
+                    background: "#EA4335",
+                    border: "none",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    boxShadow: "0 8px 24px rgba(234, 67, 53, 0.45)",
+                    transition: "transform 0.15s ease",
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.08)")}
+                  onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+                >
+                  <WaPhoneHangupIcon size={26} color="#FFFFFF" />
+                </button>
+                <Text fontSize="11.5px" fontWeight="600" color="#EF4444">
+                  End
+                </Text>
+              </Flex>
             </>
           )}
         </Flex>

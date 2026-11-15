@@ -19,12 +19,19 @@ import { ChatState } from "../Context/ChatProvider.jsx";
 import React, { useEffect, useState, useRef } from "react";
 import {
   ArrowBackIcon,
-  ArrowForwardIcon,
-  AttachmentIcon,
   DeleteIcon,
-  SearchIcon,
 } from "@chakra-ui/icons";
-import { FaPhoneAlt, FaVideo, FaClock } from "react-icons/fa";
+import {
+  WaPhoneIcon,
+  WaVideoIcon,
+  WaClockIcon,
+  WaSearchIcon,
+  WaDeleteIcon,
+  WaSmileyIcon,
+  WaAttachIcon,
+  WaSendIcon,
+  WaMicIcon,
+} from "./icons/WhatsAppIcons.jsx";
 import { getSender, getSenderDetails } from "../config/ChatLogics.jsx";
 import Profile from "./miscellaneous/Profile.jsx";
 import UpdateGroupChatModal from "./miscellaneous/UpdateGroupChatModal.jsx";
@@ -664,7 +671,7 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
                   <MenuButton
                     as={IconButton}
                     aria-label="Disappearing Messages"
-                    icon={<FaClock fontSize="15px" />}
+                    icon={<WaClockIcon size={18} />}
                     size="sm"
                     variant="ghost"
                     color={
@@ -709,7 +716,7 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
                   <Tooltip label="Voice Call" hasArrow>
                     <IconButton
                       aria-label="Voice Call"
-                      icon={<FaPhoneAlt fontSize="14px" />}
+                      icon={<WaPhoneIcon size={18} />}
                       size="sm"
                       variant="ghost"
                       color="var(--wa-icon-gray)"
@@ -721,7 +728,7 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
                   <Tooltip label="Video Call" hasArrow>
                     <IconButton
                       aria-label="Video Call"
-                      icon={<FaVideo fontSize="15px" />}
+                      icon={<WaVideoIcon size={19} />}
                       size="sm"
                       variant="ghost"
                       color="var(--wa-icon-gray)"
@@ -735,7 +742,7 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
               <Tooltip label={showSearch ? "Close search" : "Search in chat"} hasArrow>
                 <IconButton
                   aria-label="Search chat"
-                  icon={<SearchIcon />}
+                  icon={<WaSearchIcon size={18} />}
                   size="sm"
                   variant="ghost"
                   color={showSearch ? "var(--wa-accent)" : "var(--wa-icon-gray)"}
@@ -750,7 +757,7 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
               <Tooltip label="Delete Chat" hasArrow>
                 <IconButton
                   aria-label="Delete chat"
-                  icon={<DeleteIcon />}
+                  icon={<WaDeleteIcon size={18} />}
                   size="sm"
                   variant="ghost"
                   color="var(--wa-icon-gray)"
@@ -936,10 +943,8 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
                 <IconButton
                   size="sm"
                   variant="ghost"
-                  fontSize="18px"
-                  icon={<span>😀</span>}
+                  icon={<WaSmileyIcon size={22} color="var(--wa-text-secondary)" />}
                   onClick={() => setShowEmojis(!showEmojis)}
-                  color="var(--wa-text-secondary)"
                   _hover={{ color: "var(--wa-text-primary)", bg: "transparent" }}
                   aria-label="Emojis"
                 />
@@ -950,9 +955,8 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
                 <IconButton
                   size="sm"
                   variant="ghost"
-                  icon={<AttachmentIcon />}
+                  icon={<WaAttachIcon size={21} color="var(--wa-text-secondary)" />}
                   onClick={() => fileInputRef.current?.click()}
-                  color="var(--wa-text-secondary)"
                   _hover={{ color: "var(--wa-text-primary)", bg: "transparent" }}
                   aria-label="Attach photo"
                 />
@@ -981,7 +985,7 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
                       size="xs"
                       colorScheme="red"
                       variant="ghost"
-                      icon={<DeleteIcon />}
+                      icon={<WaDeleteIcon size={16} />}
                       onClick={() => stopRecording(false)}
                       aria-label="Cancel recording"
                     />
@@ -989,7 +993,7 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
                       size="xs"
                       colorScheme="teal"
                       bg="var(--wa-accent)"
-                      icon={<ArrowForwardIcon />}
+                      icon={<WaSendIcon size={14} color="#FFFFFF" />}
                       onClick={() => stopRecording(true)}
                       aria-label="Send voice note"
                     />
@@ -1020,7 +1024,7 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
                   colorScheme="teal"
                   bg="var(--wa-accent)"
                   _hover={{ bg: "var(--wa-accent-light)" }}
-                  icon={<ArrowForwardIcon />}
+                  icon={<WaSendIcon size={18} color="#FFFFFF" />}
                   onClick={sendMessage}
                   aria-label="Send message"
                 />
@@ -1032,7 +1036,7 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
                     variant="ghost"
                     color="var(--wa-text-secondary)"
                     _hover={{ bg: "var(--wa-bg-hover)", color: "var(--wa-accent)" }}
-                    icon={<span style={{ fontSize: "17px" }}>🎤</span>}
+                    icon={<WaMicIcon size={21} />}
                     onClick={startRecording}
                     aria-label="Voice Note"
                   />
