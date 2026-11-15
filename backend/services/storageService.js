@@ -20,38 +20,7 @@ class StorageService {
     this.memoryChatMessages = new Map();
     this.upstashClient = null;
 
-    this.initUpstash();
-    this.seedMemoryData();
-  }
-
-  initUpstash() {
-    const url = process.env.UPSTASH_REDIS_REST_URL;
-    const token = process.env.UPSTASH_REDIS_REST_TOKEN;
-    if (url && token && Redis) {
-      try {
-        this.upstashClient = new Redis({ url, token });
-        console.log("Upstash Redis client initialized successfully.".green.bold);
-      } catch (err) {
-        console.log(`Failed to initialize Upstash Redis: ${err.message}`.red);
-      }
-    }
-  }
-
-  getMode() {
-    if (this.upstashClient || (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN)) {
-      if (!this.upstashClient && Redis) {
-        this.initUpstash();
-      }
-      if (this.upstashClient) return "upstash";
-    }
-    if (mongoose.connection && mongoose.connection.readyState === 1) {
-      return "mongodb";
-    }
-    return "memory";
-  }
-
-  async seedMemoryData() {
-    const defaultUsers = [
+    this.defaultUsers = [
       {
         _id: "user_guest_1",
         name: "Guest User",
@@ -75,9 +44,78 @@ class StorageService {
       },
     ];
 
-    for (const u of defaultUsers) {
+    this.initUpstash();
+    this.seedMemoryData();
+  }
+
+  initUpstash() {
+    const url = process.env.UPSTASH_REDIS_REST_URL;
+    const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+    if (url && token && Redis) {
+      try {
+        this.upstashClient = new Redis({ url, token });
+        console.log("Upstash Redis client initialized successfully.".green.bold);
+        this.ensureDemoUsersInUpstash();
+      } catch (err) {
+        console.log(`Failed to initialize Upstash Redis: ${err.message}`.red);
+      }
+    }
+  }
+
+  async seedUpstashUser({ _id, name, email, password, pic }) {
+    if (!this.upstashClient) return null;
+    try {
+      const cleanEmail = email.toLowerCase().trim();
       const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash(u.password, salt);
+      const hashedPassword = await bcrypt.hash(password, salt);
+      const userObj = {
+        _id,
+        name,
+        email: cleanEmail,
+        password: hashedPassword,
+        pic: pic || "https://icon-library.com/images/anonymous-avatar-icon/anonymous-avatar-icon-25.jpg",
+        createdAt: new Date().toISOString(),
+      };
+      await this.upstashClient.set(`user:${_id}`, JSON.stringify(userObj));
+      await this.upstashClient.set(`user:email:${cleanEmail}`, _id);
+      await this.upstashClient.sadd("users:all", _id);
+      return userObj;
+    } catch (e) {
+      console.log(`Error seeding demo user in Upstash: ${e.message}`);
+      return null;
+    }
+  }
+
+  async ensureDemoUsersInUpstash() {
+    if (!this.upstashClient) return;
+    try {
+      for (const d of this.defaultUsers) {
+        const exists = await this.upstashClient.get(`user:email:${d.email}`);
+        if (!exists) {
+          await this.seedUpstashUser(d);
+        }
+      }
+    } catch (e) {
+      console.log(`Failed to ensure demo users in Upstash: ${e.message}`);
+    }
+  }
+
+  getMode() {
+    if (this.upstashClient || (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN)) {
+      if (!this.upstashClient && Redis) {
+        this.initUpstash();
+      }
+      if (this.upstashClient) return "upstash";
+    }
+    if (mongoose.connection && mongoose.connection.readyState === 1) {
+      return "mongodb";
+    }
+    return "memory";
+  }
+
+  seedMemoryData() {
+    for (const u of this.defaultUsers) {
+      const hashedPassword = bcrypt.hashSync(u.password, 10);
       const userObj = {
         _id: u._id,
         name: u.name,
@@ -188,13 +226,26 @@ class StorageService {
     const mode = this.getMode();
 
     if (mode === "mongodb") {
-      const user = await User.findOne({ email: cleanEmail });
+      let user = await User.findOne({ email: cleanEmail });
+      if (!user) {
+        const demo = this.defaultUsers.find((d) => d.email === cleanEmail);
+        if (demo) {
+          user = await User.create(demo);
+        }
+      }
       return user;
     }
 
     if (mode === "upstash") {
-      const userId = await this.upstashClient.get(`user:email:${cleanEmail}`);
-      if (!userId) return null;
+      let userId = await this.upstashClient.get(`user:email:${cleanEmail}`);
+      if (!userId) {
+        const demo = this.defaultUsers.find((d) => d.email === cleanEmail);
+        if (demo) {
+          const seeded = await this.seedUpstashUser(demo);
+          if (seeded) return seeded;
+        }
+        return null;
+      }
       const rawUser = await this.upstashClient.get(`user:${userId}`);
       return typeof rawUser === "string" ? JSON.parse(rawUser) : rawUser;
     }
@@ -219,8 +270,22 @@ class StorageService {
     }
 
     if (mode === "upstash") {
-      const rawUser = await this.upstashClient.get(`user:${id}`);
-      if (!rawUser) return null;
+      let rawUser = await this.upstashClient.get(`user:${id}`);
+      if (!rawUser) {
+        const demo = this.defaultUsers.find((d) => d._id === String(id));
+        if (demo) {
+          const seeded = await this.seedUpstashUser(demo);
+          if (seeded) {
+            return {
+              _id: String(seeded._id),
+              name: seeded.name,
+              email: seeded.email,
+              pic: seeded.pic,
+            };
+          }
+        }
+        return null;
+      }
       const user = typeof rawUser === "string" ? JSON.parse(rawUser) : rawUser;
       return {
         _id: String(user._id),
