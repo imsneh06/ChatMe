@@ -1053,6 +1053,54 @@ class StorageService {
     return msg;
   }
 
+  async markMessagesAsRead(chatId, userId) {
+    const mode = this.getMode();
+    const strUserId = String(userId);
+
+    if (mode === "mongodb") {
+      await Message.updateMany(
+        { chat: chatId, sender: { $ne: userId } },
+        { $addToSet: { readBy: userId, deliveredTo: userId }, $set: { status: "read" } }
+      );
+      return { success: true };
+    }
+
+    if (mode === "upstash") {
+      const messageIds = (await this.upstashClient.lrange(`chat:messages:${chatId}`, 0, -1)) || [];
+      for (const mid of messageIds) {
+        const raw = await this.upstashClient.get(`message:${mid}`);
+        if (raw) {
+          const msg = typeof raw === "string" ? JSON.parse(raw) : raw;
+          const senderId = String(msg.sender?._id || msg.sender);
+          if (senderId !== strUserId) {
+            msg.readBy = msg.readBy || [];
+            msg.deliveredTo = msg.deliveredTo || [];
+            if (!msg.readBy.includes(strUserId)) msg.readBy.push(strUserId);
+            if (!msg.deliveredTo.includes(strUserId)) msg.deliveredTo.push(strUserId);
+            msg.status = "read";
+            await this.upstashClient.set(`message:${mid}`, JSON.stringify(msg));
+          }
+        }
+      }
+      return { success: true };
+    }
+
+    // Memory mode
+    const list = this.memoryChatMessages.get(String(chatId)) || [];
+    for (const msg of list) {
+      const senderId = String(msg.sender?._id || msg.sender);
+      if (senderId !== strUserId) {
+        msg.readBy = msg.readBy || [];
+        msg.deliveredTo = msg.deliveredTo || [];
+        if (!msg.readBy.includes(strUserId)) msg.readBy.push(strUserId);
+        if (!msg.deliveredTo.includes(strUserId)) msg.deliveredTo.push(strUserId);
+        msg.status = "read";
+        this.memoryMessages.set(msg._id, msg);
+      }
+    }
+    return { success: true };
+  }
+
   async deleteMessage(messageId) {
     const mode = this.getMode();
 
@@ -1080,6 +1128,50 @@ class StorageService {
       this.memoryMessages.set(messageId, msg);
     }
     return msg;
+  }
+
+  async permanentlyDeleteMessage(messageId, chatId) {
+    const mode = this.getMode();
+
+    if (mode === "mongodb") {
+      const msg = await Message.findByIdAndDelete(messageId);
+      if (chatId) {
+        const latest = await Message.findOne({ chat: chatId }).sort({ createdAt: -1 });
+        await Chat.findByIdAndUpdate(chatId, { latestMessage: latest || null });
+      }
+      return msg || { _id: messageId, isPermanentlyDeleted: true };
+    }
+
+    if (mode === "upstash") {
+      await this.upstashClient.del(`message:${messageId}`);
+      if (chatId) {
+        await this.upstashClient.lrem(`chat:messages:${chatId}`, 0, messageId);
+        const remaining = await this.upstashClient.lrange(`chat:messages:${chatId}`, -1, -1);
+        if (remaining && remaining.length > 0) {
+          const rawLast = await this.upstashClient.get(`message:${remaining[0]}`);
+          const lastMsg = rawLast ? (typeof rawLast === "string" ? JSON.parse(rawLast) : rawLast) : null;
+          const chatRaw = await this.upstashClient.get(`chat:${chatId}`);
+          if (chatRaw) {
+            const chatObj = typeof chatRaw === "string" ? JSON.parse(chatRaw) : chatRaw;
+            chatObj.latestMessage = lastMsg;
+            await this.upstashClient.set(`chat:${chatId}`, JSON.stringify(chatObj));
+          }
+        }
+      }
+      return { _id: messageId, isPermanentlyDeleted: true };
+    }
+
+    // In-memory mode
+    this.memoryMessages.delete(messageId);
+    if (chatId && this.memoryChatMessages.has(chatId)) {
+      const filtered = this.memoryChatMessages.get(chatId).filter((m) => String(m._id) !== String(messageId));
+      this.memoryChatMessages.set(chatId, filtered);
+      const chat = this.memoryChats.get(chatId);
+      if (chat) {
+        chat.latestMessage = filtered[filtered.length - 1] || null;
+      }
+    }
+    return { _id: messageId, isPermanentlyDeleted: true };
   }
 }
 

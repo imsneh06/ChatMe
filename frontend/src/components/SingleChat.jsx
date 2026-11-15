@@ -81,6 +81,10 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
   const selectedChatCompareRef = useRef();
   const toast = useToast();
 
+  // 5-Second Deletion Countdown State
+  const [pendingDeletions, setPendingDeletions] = useState({});
+  const deletionTimersRef = useRef({});
+
   const scrollToBottom = () => {
     if (messagesContainerRef.current) {
       messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
@@ -125,6 +129,8 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
 
       if (socket) {
         socket.emit("join chat", selectedChat._id);
+        socket.emit("read messages", { chatId: selectedChat._id, userId: user._id });
+        axios.put(`${apiUrl}/api/message/read/${selectedChat._id}`, {}, config).catch(() => {});
       }
     } catch (error) {
       setLoading(false);
@@ -191,10 +197,35 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
       }
     };
 
+    const handlePermanentDelete = ({ messageId }) => {
+      setMessages((prev) => prev.filter((m) => m._id !== messageId));
+    };
+
+    const handleMessagesRead = ({ chatId, userId }) => {
+      if (selectedChatCompareRef.current?._id === chatId) {
+        setMessages((prev) =>
+          prev.map((m) => {
+            const senderId = String(m.sender?._id || m.sender);
+            if (senderId !== String(userId)) {
+              const readBy = m.readBy || [];
+              return {
+                ...m,
+                status: "read",
+                readBy: readBy.includes(userId) ? readBy : [...readBy, userId],
+              };
+            }
+            return m;
+          })
+        );
+      }
+    };
+
     socket.on("typing", handleTyping);
     socket.on("stop typing", handleStopTyping);
     socket.on("message reaction", handleReaction);
     socket.on("delete message", handleDelete);
+    socket.on("delete message permanent", handlePermanentDelete);
+    socket.on("messages read", handleMessagesRead);
     socket.on("message recieved", handleMessageReceived);
     socket.on("chat:disappearing-updated", handleDisappearingUpdated);
 
@@ -203,6 +234,8 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
       socket.off("stop typing", handleStopTyping);
       socket.off("message reaction", handleReaction);
       socket.off("delete message", handleDelete);
+      socket.off("delete message permanent", handlePermanentDelete);
+      socket.off("messages read", handleMessagesRead);
       socket.off("message recieved", handleMessageReceived);
       socket.off("chat:disappearing-updated", handleDisappearingUpdated);
     };
@@ -541,17 +574,84 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
     }
   };
 
-  const handleDeleteMessage = (messageId) => {
-    setMessages((prev) =>
-      prev.map((m) => (m._id === messageId ? { ...m, isDeleted: true } : m))
-    );
+  const handleInitiateDelete = (messageId) => {
+    if (deletionTimersRef.current[messageId]) return;
 
-    if (socket && selectedChat) {
-      socket.emit("delete message", {
-        chatId: selectedChat._id,
-        messageId,
-      });
+    let countdown = 5;
+    setPendingDeletions((prev) => ({ ...prev, [messageId]: countdown }));
+
+    const interval = setInterval(() => {
+      countdown -= 1;
+      if (countdown <= 0) {
+        clearInterval(interval);
+        delete deletionTimersRef.current[messageId];
+        setPendingDeletions((prev) => {
+          const next = { ...prev };
+          delete next[messageId];
+          return next;
+        });
+
+        // 1. Remove from local messages state
+        setMessages((prev) => prev.filter((m) => m._id !== messageId));
+
+        // 2. Delete permanently from backend database
+        if (user?.token && selectedChat) {
+          const config = {
+            headers: {
+              Authorization: `Bearer ${user.token}`,
+            },
+            data: {
+              chatId: selectedChat._id,
+              isPermanent: true,
+            },
+          };
+          axios.delete(`${apiUrl}/api/message/${messageId}`, config).catch((err) => {
+            console.error("Permanent delete error:", err.message);
+          });
+        }
+
+        // 3. Emit real-time socket deletion
+        if (socket && selectedChat) {
+          socket.emit("delete message permanent", {
+            chatId: selectedChat._id,
+            messageId,
+          });
+        }
+
+        toast({
+          title: "Message deleted",
+          description: "Removed permanently from database.",
+          status: "info",
+          duration: 2500,
+          isClosable: true,
+          position: "bottom-left",
+        });
+      } else {
+        setPendingDeletions((prev) => ({ ...prev, [messageId]: countdown }));
+      }
+    }, 1000);
+
+    deletionTimersRef.current[messageId] = interval;
+  };
+
+  const handleCancelDelete = (messageId) => {
+    if (deletionTimersRef.current[messageId]) {
+      clearInterval(deletionTimersRef.current[messageId]);
+      delete deletionTimersRef.current[messageId];
     }
+    setPendingDeletions((prev) => {
+      const next = { ...prev };
+      delete next[messageId];
+      return next;
+    });
+    toast({
+      title: "Deletion cancelled",
+      description: "Message was kept.",
+      status: "success",
+      duration: 2000,
+      isClosable: true,
+      position: "bottom-left",
+    });
   };
 
   const handleReplyMessage = (message) => {
@@ -950,7 +1050,11 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
                   isGroupChat={selectedChat.isGroupChat}
                   onReply={handleReplyMessage}
                   onReaction={handleReaction}
-                  onDelete={handleDeleteMessage}
+                  onDelete={handleInitiateDelete}
+                  onCancelDelete={handleCancelDelete}
+                  pendingDeletions={pendingDeletions}
+                  otherUser={otherUser}
+                  onlineUsers={onlineUsers}
                 />
                 {isTyping && (
                   <Box px="16px" py="6px" display="flex" alignItems="center">

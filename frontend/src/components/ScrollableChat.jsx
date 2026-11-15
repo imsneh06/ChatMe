@@ -3,11 +3,18 @@ import React, { useEffect, useRef, useState } from "react";
 import { formatMessageTime } from "../config/formatTime.js";
 import VoiceNotePlayer from "./VoiceNotePlayer.jsx";
 import ImageLightbox from "./ImageLightbox.jsx";
-import { Image, Box, Text, Flex } from "@chakra-ui/react";
+import { Image, Box, Text, Flex, IconButton } from "@chakra-ui/react";
 import { FaLock, FaClock } from "react-icons/fa";
 import { BsStars } from "react-icons/bs";
 import { decryptE2EEMessage } from "../utils/crypto.js";
-import { WaReplyIcon, WaDeleteIcon } from "./icons/WhatsAppIcons.jsx";
+import {
+  WaReplyIcon,
+  WaDeleteIcon,
+  WaDownloadIcon,
+  WaSingleTickIcon,
+  WaDoubleTickIcon,
+} from "./icons/WhatsAppIcons.jsx";
+import { downloadMedia } from "../utils/downloadMedia.js";
 
 const DecryptedTextMessage = ({ content, myPrivateKeyJwk, peerPublicKeyJwk }) => {
   const [displayText, setDisplayText] = useState(() => {
@@ -34,13 +41,22 @@ const DecryptedTextMessage = ({ content, myPrivateKeyJwk, peerPublicKeyJwk }) =>
   return <span style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{displayText}</span>;
 };
 
-const ScrollableChat = ({ messages, isGroupChat, onReply, onReaction, onDelete }) => {
+const ScrollableChat = ({
+  messages,
+  isGroupChat,
+  onReply,
+  onReaction,
+  onDelete,
+  onCancelDelete,
+  pendingDeletions,
+  otherUser,
+  onlineUsers = [],
+}) => {
   const { user, selectedChat, e2eeKeys } = ChatState();
   const bottomRef = useRef(null);
   const [lightboxImg, setLightboxImg] = useState(null);
   const [lightboxSender, setLightboxSender] = useState("");
-
-  // Note: Scrolling is handled safely on the messages container in SingleChat
+  const [activeMobileActionId, setActiveMobileActionId] = useState(null);
 
   // Find 1-on-1 peer user and their public key
   const peerUser =
@@ -68,22 +84,9 @@ const ScrollableChat = ({ messages, isGroupChat, onReply, onReaction, onDelete }
       ? "7 days"
       : null;
 
-  const DoubleTick = () => (
-    <svg
-      viewBox="0 0 16 11"
-      width="16"
-      height="11"
-      className="wa-tick blue"
-      fill="currentColor"
-    >
-      <path d="M11.07 1.34a.75.75 0 0 0-1.06-.02L4.85 6.3 2.5 3.96a.75.75 0 0 0-1.06 1.06l2.87 2.86a.75.75 0 0 0 1.08 0l5.66-5.48a.75.75 0 0 0 .02-1.06z" />
-      <path d="M15.07 1.34a.75.75 0 0 0-1.06-.02L8.85 6.3l-.92-.93a.75.75 0 1 0-1.06 1.06l1.45 1.45a.75.75 0 0 0 1.08 0l5.66-5.48a.75.75 0 0 0 .02-1.06z" />
-    </svg>
-  );
-
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-      {/* WhatsApp End-to-End Encryption Banner */}
+      {/* End-to-End Encryption Banner */}
       <Box
         textAlign="center"
         my="8px"
@@ -148,17 +151,25 @@ const ScrollableChat = ({ messages, isGroupChat, onReply, onReaction, onDelete }
             m.messageType === "audio" ||
             m.content === "🎤 Voice message" ||
             (typeof m.content === "string" && m.content.startsWith("🎤 Voice")) ||
-            (m.fileUrl && (m.fileUrl.endsWith(".webm") || m.fileUrl.startsWith("data:audio") || m.fileUrl.includes("audio") || m.fileUrl.includes("video/upload")));
+            (m.fileUrl && (m.fileUrl.endsWith(".webm") || m.fileUrl.startsWith("data:audio") || m.fileUrl.includes("audio")));
+
+          const isVideo =
+            m.messageType === "video" ||
+            (m.fileUrl && (m.fileUrl.match(/\.(mp4|webm|mov|mkv|ogg)/i) || m.fileUrl.includes("video/upload") || m.fileUrl.startsWith("data:video")));
 
           const isImage =
-            m.messageType === "image" ||
-            m.content === "📷 Photo" ||
-            (typeof m.content === "string" && m.content.startsWith("📷 Photo")) ||
-            (m.fileUrl && (m.fileUrl.match(/\.(jpeg|jpg|gif|png|webp)/i) || m.fileUrl.includes("image/upload") || m.fileUrl.startsWith("data:image")));
+            !isVideo &&
+            (m.messageType === "image" ||
+              m.content === "📷 Photo" ||
+              (typeof m.content === "string" && m.content.startsWith("📷 Photo")) ||
+              (m.fileUrl && (m.fileUrl.match(/\.(jpeg|jpg|gif|png|webp)/i) || m.fileUrl.includes("image/upload") || m.fileUrl.startsWith("data:image"))));
 
           const isEncrypted =
             m.isEncrypted ||
             (typeof m.content === "string" && m.content.startsWith("E2EE::"));
+
+          const isPendingDelete = pendingDeletions && pendingDeletions[m._id] !== undefined;
+          const deleteCountdown = isPendingDelete ? pendingDeletions[m._id] : 0;
 
           // Group reactions by emoji from { [userId]: emoji }
           const reactionCounts = {};
@@ -178,50 +189,87 @@ const ScrollableChat = ({ messages, isGroupChat, onReply, onReaction, onDelete }
             });
           }
           const hasReactions = Object.keys(reactionCounts).length > 0;
+          const showActions = activeMobileActionId === m._id;
 
           return (
             <div
               key={m._id}
               className={`wa-message-row ${isSender ? "out" : "in"}`}
+              onClick={() => setActiveMobileActionId(showActions ? null : m._id)}
             >
               {/* Message Bubble */}
               <div className={`wa-bubble ${isSender ? "out" : "in"}`}>
-                {/* Hover Action Bar */}
-                <div className="wa-action-bar">
+                {/* Action Bar (Hover on Desktop, Tap on Mobile) */}
+                <div className={`wa-action-bar ${showActions ? "active" : ""}`} style={showActions ? { display: "flex" } : {}}>
                   <button
                     className="wa-action-btn"
                     title="React ❤️"
-                    onClick={() => onReaction && onReaction(m._id, "❤️")}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onReaction && onReaction(m._id, "❤️");
+                    }}
                   >
                     ❤️
                   </button>
                   <button
                     className="wa-action-btn"
                     title="React 👍"
-                    onClick={() => onReaction && onReaction(m._id, "👍")}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onReaction && onReaction(m._id, "👍")}
+                    }
                   >
                     👍
                   </button>
                   <button
                     className="wa-action-btn"
                     title="React 😂"
-                    onClick={() => onReaction && onReaction(m._id, "😂")}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onReaction && onReaction(m._id, "😂");
+                    }}
                   >
                     😂
                   </button>
                   <button
                     className="wa-action-btn"
                     title="Reply"
-                    onClick={() => onReply && onReply(m)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onReply && onReply(m);
+                    }}
                     style={{ display: "inline-flex", alignItems: "center", justifyContent: "center" }}
                   >
                     <WaReplyIcon size={14} color="var(--wa-text-secondary)" />
                   </button>
+
+                  {/* Media Download Button in Action Bar */}
+                  {(isImage || isVideo) && m.fileUrl && (
+                    <button
+                      className="wa-action-btn"
+                      title="Download media"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        downloadMedia(
+                          m.fileUrl,
+                          isVideo ? `chatme-video-${m._id}.mp4` : `chatme-image-${m._id}.jpg`
+                        );
+                      }}
+                      style={{ display: "inline-flex", alignItems: "center", justifyContent: "center" }}
+                    >
+                      <WaDownloadIcon size={14} color="var(--wa-text-primary)" />
+                    </button>
+                  )}
+
+                  {/* Delete Button (with 5-second timer countdown) */}
                   {isSender && (
                     <button
                       className="wa-action-btn"
-                      title="Delete message"
-                      onClick={() => onDelete && onDelete(m._id)}
+                      title="Delete message (5s timer)"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDelete && onDelete(m._id);
+                      }}
                       style={{ display: "inline-flex", alignItems: "center", justifyContent: "center" }}
                     >
                       <WaDeleteIcon size={14} color="#EF4444" />
@@ -272,16 +320,54 @@ const ScrollableChat = ({ messages, isGroupChat, onReply, onReaction, onDelete }
                   </div>
                 )}
 
-                {/* Deleted state */}
-                {m.isDeleted ? (
+                {/* 5-Second Deletion Countdown State */}
+                {isPendingDelete ? (
+                  <div
+                    style={{
+                      padding: "8px 12px",
+                      background: "rgba(239, 68, 68, 0.18)",
+                      border: "1px dashed #EF4444",
+                      borderRadius: "8px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: "14px",
+                      minWidth: "210px",
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                      <WaDeleteIcon size={14} color="#EF4444" />
+                      <span style={{ fontSize: "12px", color: "#EF4444", fontWeight: "600" }}>
+                        Deleting in {deleteCountdown}s...
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => onCancelDelete && onCancelDelete(m._id)}
+                      style={{
+                        background: "var(--wa-accent, #00a884)",
+                        color: "#FFFFFF",
+                        border: "none",
+                        padding: "3px 12px",
+                        borderRadius: "12px",
+                        fontSize: "11px",
+                        fontWeight: "700",
+                        cursor: "pointer",
+                      }}
+                    >
+                      Undo
+                    </button>
+                  </div>
+                ) : m.isDeleted ? (
+                  /* Deleted state */
                   <span style={{ fontStyle: "italic", opacity: 0.7 }}>
                     🚫 This message was deleted
                   </span>
                 ) : (
                   <>
-                    {/* Image Message */}
-                    {isImage ? (
-                      m.fileUrl ? (
+                    {/* Image Message with Direct Download Overlay */}
+                    {isImage && m.fileUrl && (
+                      <Box position="relative" maxW="280px" mb="4px">
                         <Image
                           src={m.fileUrl}
                           alt="attachment"
@@ -290,38 +376,99 @@ const ScrollableChat = ({ messages, isGroupChat, onReply, onReaction, onDelete }
                           borderRadius="8px"
                           cursor="pointer"
                           objectFit="cover"
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.stopPropagation();
                             setLightboxImg(m.fileUrl);
                             setLightboxSender(m.sender?.name || "User");
                           }}
                         />
-                      ) : (
-                        <div
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            downloadMedia(m.fileUrl, `chatme-photo-${m._id}.jpg`);
+                          }}
+                          title="Download photo"
                           style={{
+                            position: "absolute",
+                            top: "6px",
+                            right: "6px",
+                            background: "rgba(17, 27, 33, 0.8)",
+                            color: "#FFFFFF",
+                            border: "none",
+                            borderRadius: "50%",
+                            width: "30px",
+                            height: "30px",
                             display: "flex",
                             alignItems: "center",
-                            gap: "8px",
-                            padding: "6px 12px",
-                            background: "rgba(0,0,0,0.18)",
-                            borderRadius: "8px",
-                            marginBottom: "4px",
+                            justifyContent: "center",
+                            cursor: "pointer",
+                            boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
+                            transition: "transform 0.15s ease",
                           }}
+                          onMouseEnter={(ev) => (ev.currentTarget.style.transform = "scale(1.1)")}
+                          onMouseLeave={(ev) => (ev.currentTarget.style.transform = "scale(1)")}
                         >
-                          <span style={{ fontSize: "20px" }}>📷</span>
-                          <span style={{ fontSize: "13px", fontWeight: "500" }}>Photo Attachment</span>
-                        </div>
-                      )
-                    ) : null}
+                          <WaDownloadIcon size={15} />
+                        </button>
+                      </Box>
+                    )}
+
+                    {/* Video Message with Native Controls & Direct Download Overlay */}
+                    {isVideo && m.fileUrl && (
+                      <Box position="relative" maxW="300px" mb="4px">
+                        <video
+                          controls
+                          src={m.fileUrl}
+                          style={{
+                            width: "100%",
+                            maxHeight: "260px",
+                            borderRadius: "8px",
+                            display: "block",
+                            backgroundColor: "#000",
+                          }}
+                        />
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            downloadMedia(m.fileUrl, `chatme-video-${m._id}.mp4`);
+                          }}
+                          title="Download video"
+                          style={{
+                            position: "absolute",
+                            top: "8px",
+                            right: "8px",
+                            background: "rgba(17, 27, 33, 0.82)",
+                            color: "#FFFFFF",
+                            border: "none",
+                            borderRadius: "50%",
+                            width: "30px",
+                            height: "30px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            cursor: "pointer",
+                            boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
+                            zIndex: 2,
+                            transition: "transform 0.15s ease",
+                          }}
+                          onMouseEnter={(ev) => (ev.currentTarget.style.transform = "scale(1.1)")}
+                          onMouseLeave={(ev) => (ev.currentTarget.style.transform = "scale(1)")}
+                        >
+                          <WaDownloadIcon size={15} />
+                        </button>
+                      </Box>
+                    )}
 
                     {/* Audio Voice Note Message */}
-                    {isAudio ? (
+                    {isAudio && (
                       <VoiceNotePlayer audioUrl={m.fileUrl || ""} isSender={isSender} />
-                    ) : null}
+                    )}
 
                     {/* Text Content */}
                     {m.content &&
                       !isAudio &&
                       !isImage &&
+                      !isVideo &&
                       m.content !== "🎤 Voice message" &&
                       m.content !== "📷 Photo" && (
                         <DecryptedTextMessage
@@ -333,7 +480,7 @@ const ScrollableChat = ({ messages, isGroupChat, onReply, onReaction, onDelete }
                   </>
                 )}
 
-                {/* Meta: Time, E2EE / Clock Icon, and Status Ticks */}
+                {/* Meta: Time, E2EE / Clock Icon, and Real-Time Status Ticks */}
                 <span className="wa-meta">
                   {isEncrypted && (
                     <FaLock
@@ -352,7 +499,38 @@ const ScrollableChat = ({ messages, isGroupChat, onReply, onReaction, onDelete }
                     />
                   )}
                   {formatMessageTime(m.createdAt || new Date())}
-                  {isSender && !m.isDeleted && <DoubleTick />}
+
+                  {/* WhatsApp Status Tick Logic */}
+                  {isSender && !m.isDeleted && !isPendingDelete && (
+                    <span style={{ marginLeft: "4px", display: "inline-flex", verticalAlign: "middle" }}>
+                      {(() => {
+                        const peerId = peerUser?._id ? String(peerUser._id) : null;
+                        const isPeerOnline = peerId && onlineUsers?.includes(peerId);
+
+                        // 1. Sent and Seen (Read by peer): Double Blue Ticks
+                        const isRead =
+                          m.status === "read" ||
+                          (m.readBy && (peerId ? m.readBy.some((id) => String(id) === peerId) : m.readBy.length > 0));
+
+                        if (isRead) {
+                          return <WaDoubleTickIcon size={16} isRead={true} title="Read / Seen" />;
+                        }
+
+                        // 2. Sent and Received (Delivered to peer): Double Grey Ticks
+                        const isDelivered =
+                          m.status === "delivered" ||
+                          (m.deliveredTo && (peerId ? m.deliveredTo.some((id) => String(id) === peerId) : m.deliveredTo.length > 0)) ||
+                          isPeerOnline;
+
+                        if (isDelivered) {
+                          return <WaDoubleTickIcon size={16} isRead={false} title="Delivered" />;
+                        }
+
+                        // 3. Sent but not received: Single Grey Tick
+                        return <WaSingleTickIcon size={15} color="#8696a0" title="Sent" />;
+                      })()}
+                    </span>
+                  )}
                 </span>
 
                 {/* Reaction badge under bubble */}
@@ -402,7 +580,7 @@ const ScrollableChat = ({ messages, isGroupChat, onReply, onReaction, onDelete }
         })}
       <div ref={bottomRef} />
 
-      {/* Image Lightbox Viewer */}
+      {/* Image Lightbox Viewer with Download */}
       <ImageLightbox
         isOpen={Boolean(lightboxImg)}
         onClose={() => setLightboxImg(null)}

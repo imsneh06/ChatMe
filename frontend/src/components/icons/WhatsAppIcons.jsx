@@ -314,6 +314,14 @@ export const WaNewChatIcon = ({ size = 20, color = "currentColor", ...props }) =
   </svg>
 );
 
+export const WaDownloadIcon = ({ size = 18, color = "currentColor", ...props }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+    <polyline points="7 10 12 15 17 10" />
+    <line x1="12" y1="15" x2="12" y2="3" />
+  </svg>
+);
+
 export const WaSettingsIcon = ({ size = 20, color = "currentColor", ...props }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
     <circle cx="12" cy="12" r="3" />
@@ -344,6 +352,18 @@ export const WaWindowsIcon = ({ size = 16, color = "currentColor", ...props }) =
 export const WaWhatsAppRoundIcon = ({ size = 18, ...props }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="#25D366" {...props}>
     <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0012.04 2z" />
+  </svg>
+);
+
+export const WaSingleTickIcon = ({ size = 15, color = "var(--wa-text-muted, #8696a0)", ...props }) => (
+  <svg
+    width={size}
+    height={size * 0.7}
+    viewBox="0 0 16 11"
+    fill={color}
+    {...props}
+  >
+    <path d="M11.07 1.34a.75.75 0 0 0-1.06-.02L4.85 6.3 2.5 3.96a.75.75 0 0 0-1.06 1.06l2.87 2.86a.75.75 0 0 0 1.08 0l5.66-5.48a.75.75 0 0 0 .02-1.06z" />
   </svg>
 );
 

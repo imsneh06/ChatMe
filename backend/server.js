@@ -169,6 +169,30 @@ io.on("connection", (socket) => {
     }
   });
 
+  // Handles real-time read receipts (blue ticks)
+  socket.on("read messages", async ({ chatId, userId }) => {
+    try {
+      await storageService.markMessagesAsRead(chatId, userId);
+      if (chatId) {
+        io.to(String(chatId)).emit("messages read", { chatId, userId });
+      }
+    } catch (err) {
+      console.log("Error marking messages read:", err.message);
+    }
+  });
+
+  // Handles real-time permanent message deletion after 5s countdown
+  socket.on("delete message permanent", async ({ chatId, messageId }) => {
+    try {
+      await storageService.permanentlyDeleteMessage(messageId, chatId);
+      if (chatId) {
+        io.to(String(chatId)).emit("delete message permanent", { chatId, messageId });
+      }
+    } catch (err) {
+      console.log("Error handling permanent delete message:", err.message);
+    }
+  });
+
   // Handles receiving a new message and notifying users in the chat
   socket.on("new message", (newMessageRecieved) => {
     const chat = newMessageRecieved && newMessageRecieved.chat;

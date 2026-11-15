@@ -105,4 +105,41 @@ const allMessages = asyncHandler(async (req, res) => {
   }
 });
 
-module.exports = { sendMessage, allMessages };
+const deleteMessage = asyncHandler(async (req, res) => {
+  const { messageId } = req.params;
+  const { chatId, isPermanent } = req.body;
+
+  if (!messageId) {
+    return res.status(400).send({ message: "messageId parameter missing" });
+  }
+
+  try {
+    let result;
+    if (isPermanent) {
+      result = await storageService.permanentlyDeleteMessage(messageId, chatId);
+    } else {
+      result = await storageService.deleteMessage(messageId);
+    }
+    res.json({ message: "Message deleted successfully", result });
+  } catch (error) {
+    res.status(error.statusCode || 400);
+    throw new Error(error.message);
+  }
+});
+
+const markRead = asyncHandler(async (req, res) => {
+  const { chatId } = req.params;
+  if (!chatId) {
+    return res.status(400).send({ message: "chatId parameter missing" });
+  }
+
+  try {
+    await storageService.markMessagesAsRead(chatId, req.user._id);
+    res.json({ message: "Messages marked as read" });
+  } catch (error) {
+    res.status(error.statusCode || 400);
+    throw new Error(error.message);
+  }
+});
+
+module.exports = { sendMessage, allMessages, deleteMessage, markRead };

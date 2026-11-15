@@ -12,6 +12,9 @@ const messageModel = mongoose.Schema(
     isDeleted: { type: Boolean, default: false },
     expiresAt: { type: Date, default: null },
     isEncrypted: { type: Boolean, default: false },
+    status: { type: String, default: "sent" },
+    readBy: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+    deliveredTo: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   },
   {
     timestamps: true,

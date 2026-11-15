@@ -171,8 +171,9 @@
   left: 10px;
 }
 
-.wa-message-row:hover .wa-action-bar {
-  display: flex;
+.wa-message-row:hover .wa-action-bar,
+.wa-action-bar.active {
+  display: flex !important;
   align-items: center;
 }
 
