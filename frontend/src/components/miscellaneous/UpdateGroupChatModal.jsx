@@ -227,20 +227,32 @@ function UpdateGroupChatModal({ fetchAgain, setFetchAgain, fetchMessages }) {
         icon={<ViewIcon />}
         onClick={onOpen}
         aria-label="View group settings"
+        variant="ghost"
+        size="sm"
+        color="var(--wa-text-secondary)"
+        _hover={{ bg: "var(--wa-bg-hover)", color: "var(--wa-text-primary)" }}
       />
 
       <Modal isOpen={isOpen} onClose={onClose} isCentered>
-        <ModalOverlay />
-        <ModalContent>
+        <ModalOverlay bg="rgba(11, 20, 26, 0.75)" backdropFilter="blur(3px)" />
+        <ModalContent
+          bg="var(--wa-bg-panel)"
+          color="var(--wa-text-primary)"
+          border="1px solid var(--wa-border)"
+          borderRadius="16px"
+          boxShadow="0 8px 32px rgba(0, 0, 0, 0.5)"
+          p="6px"
+        >
           <ModalHeader
-            fontSize="30px"
-            fontFamily="Work sans"
+            fontSize="22px"
+            fontWeight="600"
             display="flex"
             justifyContent="center"
+            color="var(--wa-text-primary)"
           >
             {selectedChat.chatName}
           </ModalHeader>
-          <ModalCloseButton />
+          <ModalCloseButton color="var(--wa-text-secondary)" _hover={{ color: "var(--wa-text-primary)" }} />
           <ModalBody display="flex" flexDir="column" alignItems="center">
             <Box w="100%" display="flex" flexWrap="wrap" pb={3}>
               {selectedChat.users.map((u) => (
@@ -252,17 +264,23 @@ function UpdateGroupChatModal({ fetchAgain, setFetchAgain, fetchMessages }) {
               ))}
             </Box>
 
-            <FormControl display="flex">
+            <FormControl display="flex" mb={3}>
               <Input
                 placeholder="New Group Name"
-                mb={3}
                 value={groupChatName}
                 onChange={(e) => setGroupChatName(e.target.value)}
+                bg="var(--wa-input-bg)"
+                color="var(--wa-text-primary)"
+                borderColor="var(--wa-border)"
+                _placeholder={{ color: "var(--wa-text-muted)" }}
+                _focus={{ borderColor: "var(--wa-accent)" }}
               />
               <Button
                 variant="solid"
-                colorScheme="teal"
-                ml={1}
+                bg="var(--wa-accent)"
+                color="white"
+                _hover={{ bg: "#008069" }}
+                ml={2}
                 isLoading={renameLoading}
                 onClick={handleRename}
               >
@@ -270,17 +288,21 @@ function UpdateGroupChatModal({ fetchAgain, setFetchAgain, fetchMessages }) {
               </Button>
             </FormControl>
 
-            <FormControl>
+            <FormControl mb={2}>
               <Input
                 placeholder="Add User to group"
-                mb={1}
                 value={search}
                 onChange={(e) => handleSearch(e.target.value)}
+                bg="var(--wa-input-bg)"
+                color="var(--wa-text-primary)"
+                borderColor="var(--wa-border)"
+                _placeholder={{ color: "var(--wa-text-muted)" }}
+                _focus={{ borderColor: "var(--wa-accent)" }}
               />
             </FormControl>
 
             {loading ? (
-              <Spinner size="lg" />
+              <Spinner size="lg" color="var(--wa-accent)" my={3} />
             ) : (
               searchResult?.map((u) => (
                 <UserListItem
@@ -293,7 +315,14 @@ function UpdateGroupChatModal({ fetchAgain, setFetchAgain, fetchMessages }) {
           </ModalBody>
 
           <ModalFooter>
-            <Button colorScheme="red" onClick={() => handleRemove(user)}>
+            <Button
+              bg="#EF4444"
+              color="white"
+              _hover={{ bg: "#DC2626" }}
+              borderRadius="8px"
+              w="100%"
+              onClick={() => handleRemove(user)}
+            >
               Leave Group
             </Button>
           </ModalFooter>

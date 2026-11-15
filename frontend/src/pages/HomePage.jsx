@@ -24,72 +24,88 @@ const HomePage = () => {
   }, [navigate]);
 
   return (
-    <Container maxW="xl" centerContent display="flex" justifyContent="center">
+    <Box
+      w="100vw"
+      minH="100vh"
+      bg="var(--wa-bg-deep)"
+      display="flex"
+      flexDir="column"
+      alignItems="center"
+      position="relative"
+      overflowY="auto"
+    >
+      {/* WhatsApp Web Green Header Banner */}
       <Box
-        display="flex"
-        flexDirection="column"
-        alignItems="center"
-        justifyContent="center"
-        p={3}
-        bg={"rgba(42, 227, 165, 0.95)"}
+        position="absolute"
+        top="0"
+        left="0"
         w="100%"
-        m="40px 0 15px 0"
-        borderRadius="2xl"
-        borderWidth="3px"
-        borderColor="teal.600"
-        boxShadow="lg"
-      >
-        <Text
-          fontSize="4xl"
-          fontFamily="Work sans"
-          color="black"
-          fontWeight="bold"
+        h="220px"
+        bg="var(--wa-accent)"
+        zIndex="0"
+      />
+
+      <Container maxW="lg" zIndex="1" pt="40px" pb="40px">
+        {/* Brand Header */}
+        <Box
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
+          gap="10px"
+          mb="24px"
         >
-          💬 ChatMe
-        </Text>
-        <Text fontSize="xs" color="gray.800" fontWeight="500">
-          Real-Time Messaging with Socket.io & Upstash / MongoDB
-        </Text>
-      </Box>
-      <Box
-        bg="rgba(42, 227, 165, 0.92)"
-        w="100%"
-        borderRadius="2xl"
-        borderWidth="3px"
-        borderColor="teal.600"
-        p={4}
-        boxShadow="lg"
-      >
-        <Tabs isFitted variant="enclosed">
-          <TabList mb="1em">
-            <Tab
-              borderRadius="xl"
-              borderWidth="2px"
-              fontWeight={700}
-              _selected={{ color: "teal.800", bg: "white" }}
-            >
-              Login
-            </Tab>
-            <Tab
-              borderRadius="xl"
-              borderWidth="2px"
-              fontWeight={700}
-              _selected={{ color: "teal.800", bg: "white" }}
-            >
-              Sign Up
-            </Tab>
-          </TabList>
-          <TabPanels>
-            <TabPanel>
-              <Login />
-            </TabPanel>
-            <TabPanel>
-              <Signup />
-            </TabPanel>
-          </TabPanels>
-        </Tabs>
-      </Box>
-    </Container>
+          <Text fontSize="28px" fontWeight="700" color="white" letterSpacing="0.5px">
+            💬 ChatMe for Web
+          </Text>
+        </Box>
+
+        {/* Auth Box */}
+        <Box
+          bg="var(--wa-bg-panel)"
+          color="var(--wa-text-primary)"
+          w="100%"
+          borderRadius="8px"
+          boxShadow="0 17px 50px 0 rgba(11,20,26,.19), 0 12px 15px 0 rgba(11,20,26,.24)"
+          p="28px"
+          border="1px solid var(--wa-border)"
+        >
+          <Tabs isFitted variant="enclosed">
+            <TabList mb="20px" borderBottom="1px solid var(--wa-border)">
+              <Tab
+                fontWeight="600"
+                color="var(--wa-text-secondary)"
+                _selected={{
+                  color: "var(--wa-accent-light)",
+                  borderColor: "var(--wa-accent-light)",
+                  borderBottom: "2px solid var(--wa-accent-light)",
+                }}
+              >
+                Log In
+              </Tab>
+              <Tab
+                fontWeight="600"
+                color="var(--wa-text-secondary)"
+                _selected={{
+                  color: "var(--wa-accent-light)",
+                  borderColor: "var(--wa-accent-light)",
+                  borderBottom: "2px solid var(--wa-accent-light)",
+                }}
+              >
+                Sign Up
+              </Tab>
+            </TabList>
+            <TabPanels>
+              <TabPanel p="0">
+                <Login />
+              </TabPanel>
+              <TabPanel p="0">
+                <Signup />
+              </TabPanel>
+            </TabPanels>
+          </Tabs>
+        </Box>
+      </Container>
+    </Box>
   );
 };
 

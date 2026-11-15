@@ -2,9 +2,9 @@ const asyncHandler = require("express-async-handler");
 const storageService = require("../services/storageService.js");
 
 const sendMessage = asyncHandler(async (req, res) => {
-  const { content, chatId } = req.body;
+  const { content, chatId, messageType, fileUrl, replyTo } = req.body;
 
-  if (!content || !chatId) {
+  if ((!content && !fileUrl) || !chatId) {
     return res.status(400).send({ message: "Invalid message data" });
   }
 
@@ -13,6 +13,9 @@ const sendMessage = asyncHandler(async (req, res) => {
       senderId: req.user._id,
       content,
       chatId,
+      messageType: messageType || "text",
+      fileUrl: fileUrl || null,
+      replyTo: replyTo || null,
     });
     res.json(message);
   } catch (error) {

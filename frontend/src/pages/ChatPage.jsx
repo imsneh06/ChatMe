@@ -7,24 +7,23 @@ import { useState } from "react";
 
 const ChatPage = () => {
   const { user } = ChatState();
-  // console.log(user);
   const [fetchAgain, setFetchAgain] = useState(false);
 
   return (
-    <div style={{ width: "100%" }}>
+    <Box w="100vw" h="100vh" display="flex" flexDir="column" overflow="hidden" bg="var(--wa-bg-deep)">
       {user && <SideDrawer />}
 
       <Box
         display="flex"
-        justifyContent="space-between"
         w="100%"
-        h="90vh"
-        p="10px"
+        flex="1"
+        overflow="hidden"
+        position="relative"
       >
-        {user && <MyChats fetchAgain={fetchAgain}  />}
-        {user && <ChatBox fetchAgain={fetchAgain} setFetchAgain={setFetchAgain}/>}
+        {user && <MyChats fetchAgain={fetchAgain} />}
+        {user && <ChatBox fetchAgain={fetchAgain} setFetchAgain={setFetchAgain} />}
       </Box>
-    </div>
+    </Box>
   );
 };
 

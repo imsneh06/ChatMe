@@ -42,7 +42,8 @@ app.use(
   })
 );
 
-app.use(express.json());
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
 // Routes
 app.use("/api/user", userRoutes);
@@ -81,12 +82,21 @@ const io = require("socket.io")(server, {
   },
 });
 
+// In-memory online presence tracking (0 Redis commands used)
+const onlineUsers = new Map(); // socket.id -> userId
+
 io.on("connection", (socket) => {
   // Handles user setup and room creation
   socket.on("setup", (userData) => {
     if (userData && userData._id) {
       socket.join(userData._id);
+      onlineUsers.set(socket.id, userData._id);
       socket.emit("connected");
+
+      // Broadcast and synchronize online users
+      const activeIds = Array.from(new Set(onlineUsers.values()));
+      socket.emit("online users", activeIds);
+      socket.broadcast.emit("user online", userData._id);
     }
   });
 
@@ -99,10 +109,31 @@ io.on("connection", (socket) => {
 
   // Emits typing status to the room
   socket.on("typing", (room) => {
-    if (room) socket.in(room).emit("typing");
+    if (room) socket.in(room).emit("typing", room);
   });
   socket.on("stop typing", (room) => {
-    if (room) socket.in(room).emit("stop typing");
+    if (room) socket.in(room).emit("stop typing", room);
+  });
+
+  // Handles message delivery and read receipts
+  socket.on("read message", ({ chatId, messageId, readerId }) => {
+    if (chatId) {
+      socket.in(chatId).emit("message read", { chatId, messageId, readerId });
+    }
+  });
+
+  // Handles real-time emoji reactions
+  socket.on("message reaction", ({ chatId, messageId, emoji, userId }) => {
+    if (chatId) {
+      socket.in(chatId).emit("message reaction", { messageId, emoji, userId });
+    }
+  });
+
+  // Handles real-time message deletion
+  socket.on("delete message", ({ chatId, messageId }) => {
+    if (chatId) {
+      socket.in(chatId).emit("delete message", { messageId });
+    }
   });
 
   // Handles receiving a new message and notifying users in the chat
@@ -123,6 +154,13 @@ io.on("connection", (socket) => {
   });
 
   socket.on("disconnect", () => {
-    // Socket disconnected
+    const userId = onlineUsers.get(socket.id);
+    if (userId) {
+      onlineUsers.delete(socket.id);
+      const isStillConnected = Array.from(onlineUsers.values()).includes(userId);
+      if (!isStillConnected) {
+        socket.broadcast.emit("user offline", userId);
+      }
+    }
   });
 });

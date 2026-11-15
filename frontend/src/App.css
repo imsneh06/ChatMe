@@ -1,22 +1,102 @@
-@import url('https://fonts.googleapis.com/css2?family=Work+Sans:ital,wght@0,300;1,300&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;500;600;700&display=swap');
 
-.App{
-  min-height: 100vh;
+:root {
+  /* WhatsApp Dark Theme (Default) */
+  --wa-bg-deep: #0c1317;
+  --wa-bg-main: #111b21;
+  --wa-bg-panel: #202c33;
+  --wa-bg-hover: #202c33;
+  --wa-bg-active: #2a3942;
+  --wa-bg-chat: #0b141a;
+  --wa-bubble-out: #005c4b;
+  --wa-bubble-in: #202c33;
+  --wa-text-primary: #e9edef;
+  --wa-text-secondary: #8696a0;
+  --wa-text-muted: #667781;
+  --wa-accent: #00a884;
+  --wa-accent-light: #25d366;
+  --wa-blue-tick: #53bdeb;
+  --wa-border: rgba(134, 150, 160, 0.15);
+  --wa-input-bg: #2a3942;
+  --wa-badge: #00a884;
+  --wa-search-bg: #202c33;
+}
+
+.light-theme {
+  /* WhatsApp Light Theme */
+  --wa-bg-deep: #eae6df;
+  --wa-bg-main: #ffffff;
+  --wa-bg-panel: #f0f2f5;
+  --wa-bg-hover: #f5f6f6;
+  --wa-bg-active: #ebebeb;
+  --wa-bg-chat: #efeae2;
+  --wa-bubble-out: #d9fdd3;
+  --wa-bubble-in: #ffffff;
+  --wa-text-primary: #111b21;
+  --wa-text-secondary: #667781;
+  --wa-text-muted: #8696a0;
+  --wa-accent: #008069;
+  --wa-accent-light: #25d366;
+  --wa-blue-tick: #53bdeb;
+  --wa-border: #e9edef;
+  --wa-input-bg: #ffffff;
+  --wa-badge: #25d366;
+  --wa-search-bg: #f0f2f5;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+}
+
+body {
+  background-color: var(--wa-bg-deep);
+  color: var(--wa-text-primary);
+  overflow: hidden;
+}
+
+.App {
+  width: 100vw;
+  height: 100vh;
   display: flex;
-  background-image: url('./assets/ChatMeBG.jpeg');
-  background-size: contain;
+  background-color: var(--wa-bg-deep);
+  overflow: hidden;
+}
+
+/* WhatsApp Chat Wallpaper with ChatMeBG adapted to dark mode */
+.wa-chat-bg {
+  background-color: var(--wa-bg-chat);
+  background-image: linear-gradient(rgba(11, 20, 26, 0.88), rgba(11, 20, 26, 0.88)), url('./assets/ChatMeBG.jpeg');
+  background-size: cover;
   background-position: center;
-  filter: brightness(85%);
+  background-repeat: no-repeat;
 }
 
-::-webkit-scrollbar{
-  width: 0px;
-}
-::-webkit-scrollbar-thumb{
-  background: rgba(136, 136, 136, 0.281);
+.light-theme .wa-chat-bg {
+  background-color: var(--wa-bg-chat);
+  background-image: linear-gradient(rgba(239, 234, 226, 0.85), rgba(239, 234, 226, 0.85)), url('./assets/ChatMeBG.jpeg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 
-/*Hover*/
-::-webkit-scrollbar-thumb:hover{
-  background: #555;
+/* Custom Scrollbar styled like WhatsApp */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(134, 150, 160, 0.2);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(134, 150, 160, 0.4);
 }

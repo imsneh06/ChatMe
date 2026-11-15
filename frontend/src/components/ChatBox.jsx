@@ -3,20 +3,17 @@ import { ChatState } from "../Context/ChatProvider.jsx";
 import React from "react";
 import SingleChat from "./SingleChat.jsx";
 
-const ChatBox = ({fetchAgain, setFetchAgain}) => {
+const ChatBox = ({ fetchAgain, setFetchAgain }) => {
   const { selectedChat } = ChatState();
+
   return (
     <Box
       display={{ base: selectedChat ? "flex" : "none", md: "flex" }}
-      alignItems="center"
+      flex="1"
+      h="100%"
+      overflow="hidden"
       flexDir="column"
-      p={3}
-      borderColor="rgb(14, 209, 134)"
-      bg="rgba(255, 255, 255, 0.91)"
-      w={{ base: "100%", md: "68%" }}
-      borderRadius="lg"
-      borderWidth="2px"
-      
+      position="relative"
     >
       <SingleChat fetchAgain={fetchAgain} setFetchAgain={setFetchAgain} />
     </Box>

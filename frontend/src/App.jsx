@@ -1,17 +1,18 @@
 import { Routes, Route } from "react-router-dom";
 import HomePage from "./pages/HomePage";
 import ChatPage from "./pages/ChatPage";
-import './App.css'
-
+import { ChatState } from "./Context/ChatProvider.jsx";
+import "./App.css";
 
 function App() {
-  console.log(import.meta.env.VITE_BACKEND_URL)
+  const { darkMode } = ChatState();
+
   return (
-    <div className="App">
-    <Routes >
-      <Route path="/" element={<HomePage />} />
-      <Route path="/chats" element={<ChatPage />} />
-    </Routes>
+    <div className={`App ${darkMode ? "" : "light-theme"}`}>
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/chats" element={<ChatPage />} />
+      </Routes>
     </div>
   );
 }

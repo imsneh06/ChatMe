@@ -63,13 +63,13 @@ const Signup = () => {
             position: "bottom",
           });
         })
-        .catch((error) => {
+        .catch(() => {
           setLoading(false);
           toast({
-            title: "Upload failed",
-            description: "Could not upload image. A default avatar will be used.",
+            title: "Upload note",
+            description: "Default avatar will be used.",
             status: "info",
-            duration: 4000,
+            duration: 3000,
             isClosable: true,
             position: "bottom",
           });
@@ -152,40 +152,61 @@ const Signup = () => {
   };
 
   return (
-    <VStack spacing="10px">
+    <VStack spacing="12px">
       <FormControl id="signup-name" isRequired>
-        <FormLabel fontWeight="600">Full Name</FormLabel>
+        <FormLabel fontWeight="500" fontSize="14px" color="var(--wa-text-primary)">
+          Full Name
+        </FormLabel>
         <Input
-          bg="white"
+          bg="var(--wa-input-bg)"
+          color="var(--wa-text-primary)"
+          borderColor="var(--wa-border)"
           placeholder="Enter Your Name"
           value={name}
           onChange={(e) => setName(e.target.value)}
+          _focus={{ borderColor: "var(--wa-accent)" }}
         />
       </FormControl>
 
       <FormControl id="signup-email" isRequired>
-        <FormLabel fontWeight="600">Email Address</FormLabel>
+        <FormLabel fontWeight="500" fontSize="14px" color="var(--wa-text-primary)">
+          Email Address
+        </FormLabel>
         <Input
-          bg="white"
+          bg="var(--wa-input-bg)"
+          color="var(--wa-text-primary)"
+          borderColor="var(--wa-border)"
           type="email"
           placeholder="Enter Your Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          _focus={{ borderColor: "var(--wa-accent)" }}
         />
       </FormControl>
 
       <FormControl id="signup-password" isRequired>
-        <FormLabel fontWeight="600">Password</FormLabel>
+        <FormLabel fontWeight="500" fontSize="14px" color="var(--wa-text-primary)">
+          Password
+        </FormLabel>
         <InputGroup>
           <Input
             type={show ? "text" : "password"}
-            bg="white"
+            bg="var(--wa-input-bg)"
+            color="var(--wa-text-primary)"
+            borderColor="var(--wa-border)"
             placeholder="Enter Your Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            _focus={{ borderColor: "var(--wa-accent)" }}
           />
           <InputRightElement width="4.5rem">
-            <Button h="1.75rem" size="sm" onClick={handleClick}>
+            <Button
+              h="1.75rem"
+              size="xs"
+              variant="ghost"
+              color="var(--wa-text-secondary)"
+              onClick={handleClick}
+            >
               {show ? "Hide" : "Show"}
             </Button>
           </InputRightElement>
@@ -193,17 +214,28 @@ const Signup = () => {
       </FormControl>
 
       <FormControl id="signup-confirmpassword" isRequired>
-        <FormLabel fontWeight="600">Confirm Password</FormLabel>
+        <FormLabel fontWeight="500" fontSize="14px" color="var(--wa-text-primary)">
+          Confirm Password
+        </FormLabel>
         <InputGroup>
           <Input
             type={show ? "text" : "password"}
-            bg="white"
+            bg="var(--wa-input-bg)"
+            color="var(--wa-text-primary)"
+            borderColor="var(--wa-border)"
             placeholder="Confirm Your Password"
             value={confirmpassword}
             onChange={(e) => setConfirmpassword(e.target.value)}
+            _focus={{ borderColor: "var(--wa-accent)" }}
           />
           <InputRightElement width="4.5rem">
-            <Button h="1.75rem" size="sm" onClick={handleClick}>
+            <Button
+              h="1.75rem"
+              size="xs"
+              variant="ghost"
+              color="var(--wa-text-secondary)"
+              onClick={handleClick}
+            >
               {show ? "Hide" : "Show"}
             </Button>
           </InputRightElement>
@@ -211,20 +243,26 @@ const Signup = () => {
       </FormControl>
 
       <FormControl id="signup-pic">
-        <FormLabel fontWeight="600">Upload Profile Picture (Optional)</FormLabel>
+        <FormLabel fontWeight="500" fontSize="14px" color="var(--wa-text-primary)">
+          Profile Picture (Optional)
+        </FormLabel>
         <Input
-          bg="white"
+          bg="var(--wa-input-bg)"
+          color="var(--wa-text-primary)"
+          borderColor="var(--wa-border)"
           type="file"
-          p={1.5}
+          p={1}
           accept="image/*"
           onChange={(e) => postDetails(e.target.files[0])}
         />
       </FormControl>
 
       <Button
-        colorScheme="teal"
+        bg="var(--wa-accent)"
+        _hover={{ bg: "var(--wa-accent-light)" }}
+        color="white"
         width="100%"
-        style={{ marginTop: 15 }}
+        mt="10px"
         onClick={submitHandler}
         isLoading={loading}
       >

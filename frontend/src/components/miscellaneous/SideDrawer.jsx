@@ -1,26 +1,33 @@
 import {
+  Avatar,
   Box,
   Button,
-  Tooltip,
-  Text,
-  Menu,
-  MenuButton,
-  MenuList,
-  Avatar,
-  MenuItem,
-  MenuDivider,
   Drawer,
   DrawerBody,
+  DrawerContent,
   DrawerHeader,
   DrawerOverlay,
-  DrawerContent,
-  useDisclosure,
+  IconButton,
   Input,
-  useToast,
+  Menu,
+  MenuButton,
+  MenuDivider,
+  MenuItem,
+  MenuList,
   Spinner,
+  Text,
+  Tooltip,
+  useDisclosure,
+  useToast,
 } from "@chakra-ui/react";
 import React, { useState } from "react";
-import { BellIcon, ChevronDownIcon } from "@chakra-ui/icons";
+import {
+  BellIcon,
+  ChevronDownIcon,
+  MoonIcon,
+  SearchIcon,
+  SunIcon,
+} from "@chakra-ui/icons";
 import { ChatState } from "../../Context/ChatProvider.jsx";
 import Profile from "./Profile.jsx";
 import { useNavigate } from "react-router-dom";
@@ -45,6 +52,8 @@ const SideDrawer = () => {
     setChats,
     notification,
     setNotification,
+    darkMode,
+    toggleDarkMode,
   } = ChatState();
   const navigate = useNavigate();
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -139,55 +148,96 @@ const SideDrawer = () => {
         display="flex"
         justifyContent="space-between"
         alignItems="center"
-        bg="white"
+        bg="var(--wa-bg-panel)"
         w="100%"
-        p="6px 12px"
-        borderWidth="3px"
-        borderColor="teal.500"
+        px="16px"
+        py="8px"
+        borderBottom="1px solid var(--wa-border)"
       >
-        <Tooltip label="Search users to chat with" hasArrow placement="bottom-end">
-          <Button variant="ghost" onClick={onOpen} colorScheme="teal">
-            <i className="fa-solid fa-magnifying-glass"></i>
-            <Text display={{ base: "none", md: "flex" }} px="2" fontWeight="600">
-              Search Contacts
-            </Text>
-          </Button>
-        </Tooltip>
+        <Box display="flex" alignItems="center" gap="10px">
+          <Tooltip label="Search contacts to chat" hasArrow placement="bottom-end">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onOpen}
+              color="var(--wa-text-secondary)"
+              _hover={{ bg: "var(--wa-bg-hover)", color: "var(--wa-accent)" }}
+              leftIcon={<SearchIcon />}
+            >
+              <Text display={{ base: "none", md: "flex" }} fontSize="13px" fontWeight="500">
+                New Chat
+              </Text>
+            </Button>
+          </Tooltip>
 
-        <Text fontSize="2xl" fontFamily="Work sans" fontWeight="bold" color="teal.700">
-          💬 ChatMe
-        </Text>
+          <Text
+            fontSize="18px"
+            fontWeight="700"
+            color="var(--wa-accent-light)"
+            display={{ base: "none", sm: "block" }}
+          >
+            ChatMe
+          </Text>
+        </Box>
 
-        <div>
+        <Box display="flex" alignItems="center" gap="4px">
+          {/* Theme Toggle (Dark / Light) */}
+          <Tooltip
+            label={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+            hasArrow
+          >
+            <IconButton
+              size="sm"
+              variant="ghost"
+              icon={darkMode ? <SunIcon /> : <MoonIcon />}
+              onClick={toggleDarkMode}
+              color="var(--wa-text-secondary)"
+              _hover={{ bg: "var(--wa-bg-hover)", color: "var(--wa-text-primary)" }}
+              aria-label="Toggle theme"
+            />
+          </Tooltip>
+
+          {/* Notifications */}
           <Menu>
-            <MenuButton p={1} style={{ position: "relative" }}>
-              <BellIcon fontSize="2xl" m={1} />
-              {notification && notification.length > 0 && (
-                <span
-                  style={{
-                    position: "absolute",
-                    top: "2px",
-                    right: "4px",
-                    backgroundColor: "#E53E3E",
-                    color: "white",
-                    borderRadius: "50%",
-                    padding: "2px 6px",
-                    fontSize: "11px",
-                    fontWeight: "bold",
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
-                  }}
-                >
-                  {notification.length}
-                </span>
+            <MenuButton
+              as={IconButton}
+              size="sm"
+              variant="ghost"
+              icon={<BellIcon fontSize="18px" />}
+              color="var(--wa-text-secondary)"
+              _hover={{ bg: "var(--wa-bg-hover)", color: "var(--wa-text-primary)" }}
+              position="relative"
+              aria-label="Notifications"
+            />
+            {notification && notification.length > 0 && (
+              <span
+                style={{
+                  position: "absolute",
+                  top: "6px",
+                  right: "60px",
+                  backgroundColor: "var(--wa-badge)",
+                  color: "white",
+                  borderRadius: "50%",
+                  padding: "1px 5px",
+                  fontSize: "10px",
+                  fontWeight: "bold",
+                  pointerEvents: "none",
+                }}
+              >
+                {notification.length}
+              </span>
+            )}
+            <MenuList bg="var(--wa-bg-panel)" borderColor="var(--wa-border)">
+              {!notification.length && (
+                <MenuItem bg="var(--wa-bg-panel)" color="var(--wa-text-secondary)">
+                  No new messages
+                </MenuItem>
               )}
-            </MenuButton>
-            <MenuList pl={2} bg="teal.50">
-              {!notification.length && "No new messages."}
               {notification.map((notify) => (
                 <MenuItem
-                  bg="teal.50"
+                  bg="var(--wa-bg-panel)"
+                  color="var(--wa-text-primary)"
+                  _hover={{ bg: "var(--wa-bg-hover)" }}
                   key={notify._id}
                   onClick={() => {
                     setSelectedChat(notify.chat);
@@ -202,8 +252,15 @@ const SideDrawer = () => {
             </MenuList>
           </Menu>
 
+          {/* User Menu */}
           <Menu>
-            <MenuButton as={Button} rightIcon={<ChevronDownIcon />} colorScheme="teal" variant="ghost">
+            <MenuButton
+              as={Button}
+              variant="ghost"
+              size="sm"
+              rightIcon={<ChevronDownIcon color="var(--wa-text-secondary)" />}
+              p="2px"
+            >
               <Avatar
                 size="sm"
                 cursor="pointer"
@@ -211,33 +268,53 @@ const SideDrawer = () => {
                 src={user?.pic}
               />
             </MenuButton>
-            <MenuList>
+            <MenuList bg="var(--wa-bg-panel)" borderColor="var(--wa-border)">
               <Profile user={user}>
-                <MenuItem>My Profile</MenuItem>
+                <MenuItem bg="var(--wa-bg-panel)" color="var(--wa-text-primary)" _hover={{ bg: "var(--wa-bg-hover)" }}>
+                  Profile
+                </MenuItem>
               </Profile>
-              <MenuDivider />
-              <MenuItem onClick={logOutHandler} color="red.500">
-                Logout
+              <MenuDivider borderColor="var(--wa-border)" />
+              <MenuItem
+                bg="var(--wa-bg-panel)"
+                color="#EF4444"
+                _hover={{ bg: "var(--wa-bg-hover)" }}
+                onClick={logOutHandler}
+              >
+                Log Out
               </MenuItem>
             </MenuList>
           </Menu>
-        </div>
+        </Box>
       </Box>
 
+      {/* Search Drawer */}
       <Drawer placement="left" onClose={onClose} isOpen={isOpen}>
         <DrawerOverlay />
-        <DrawerContent>
-          <DrawerHeader borderBottomWidth="1px">Search Contacts</DrawerHeader>
-          <DrawerBody>
-            <Box display="flex" pb={2}>
+        <DrawerContent bg="var(--wa-bg-main)" color="var(--wa-text-primary)">
+          <DrawerHeader borderBottom="1px solid var(--wa-border)" bg="var(--wa-bg-panel)">
+            Search Contacts
+          </DrawerHeader>
+          <DrawerBody p="16px">
+            <Box display="flex" pb="16px">
               <Input
                 placeholder="Search by name or email"
                 mr={2}
                 value={search}
+                bg="var(--wa-search-bg)"
+                border="none"
+                color="var(--wa-text-primary)"
+                _focus={{ boxShadow: "none" }}
                 onChange={(e) => setSearch(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSearch()}
               />
-              <Button onClick={handleSearch} colorScheme="teal">
+              <Button
+                onClick={handleSearch}
+                bg="var(--wa-accent)"
+                color="white"
+                _hover={{ bg: "#008069" }}
+                size="md"
+              >
                 Search
               </Button>
             </Box>

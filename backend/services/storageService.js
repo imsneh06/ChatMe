@@ -684,14 +684,17 @@ class StorageService {
 
   // ================= MESSAGES =================
 
-  async createMessage({ senderId, content, chatId }) {
+  async createMessage({ senderId, content, chatId, messageType = "text", fileUrl = null, replyTo = null }) {
     const mode = this.getMode();
 
     if (mode === "mongodb") {
       let message = await Message.create({
         sender: senderId,
-        content,
+        content: content || (messageType === "image" ? "📷 Photo" : messageType === "audio" ? "🎤 Voice message" : "📎 File"),
         chat: chatId,
+        messageType: messageType || "text",
+        fileUrl: fileUrl || null,
+        replyTo: replyTo || null,
       });
 
       message = await message.populate("sender", "name pic email");
@@ -714,6 +717,8 @@ class StorageService {
     }
 
     const messageId = `m_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+    const displayContent = content || (messageType === "image" ? "📷 Photo" : messageType === "audio" ? "🎤 Voice message" : "📎 File");
+
     const messageObj = {
       _id: messageId,
       sender: {
@@ -722,7 +727,12 @@ class StorageService {
         pic: sender.pic,
         email: sender.email,
       },
-      content,
+      content: displayContent,
+      messageType,
+      fileUrl,
+      replyTo,
+      reactions: {},
+      isDeleted: false,
       chat: {
         _id: chat._id,
         chatName: chat.chatName,

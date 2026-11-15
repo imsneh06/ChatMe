@@ -87,29 +87,46 @@ const Login = () => {
   };
 
   return (
-    <VStack spacing="12px">
+    <VStack spacing="14px">
       <FormControl id="login-email" isRequired>
-        <FormLabel fontWeight="600">Email Address</FormLabel>
+        <FormLabel fontWeight="500" fontSize="14px" color="var(--wa-text-primary)">
+          Email Address
+        </FormLabel>
         <Input
-          bg="white"
+          bg="var(--wa-input-bg)"
+          color="var(--wa-text-primary)"
+          borderColor="var(--wa-border)"
           type="email"
           placeholder="Enter Your Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          _focus={{ borderColor: "var(--wa-accent)" }}
         />
       </FormControl>
+
       <FormControl id="login-password" isRequired>
-        <FormLabel fontWeight="600">Password</FormLabel>
+        <FormLabel fontWeight="500" fontSize="14px" color="var(--wa-text-primary)">
+          Password
+        </FormLabel>
         <InputGroup>
           <Input
             type={show ? "text" : "password"}
-            bg="white"
+            bg="var(--wa-input-bg)"
+            color="var(--wa-text-primary)"
+            borderColor="var(--wa-border)"
             placeholder="Enter Your Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            _focus={{ borderColor: "var(--wa-accent)" }}
           />
           <InputRightElement width="4.5rem">
-            <Button h="1.75rem" size="sm" onClick={handleClick}>
+            <Button
+              h="1.75rem"
+              size="xs"
+              variant="ghost"
+              color="var(--wa-text-secondary)"
+              onClick={handleClick}
+            >
               {show ? "Hide" : "Show"}
             </Button>
           </InputRightElement>
@@ -117,18 +134,22 @@ const Login = () => {
       </FormControl>
 
       <Button
-        colorScheme="teal"
+        bg="var(--wa-accent)"
+        _hover={{ bg: "var(--wa-accent-light)" }}
+        color="white"
         width="100%"
-        style={{ marginTop: 15 }}
+        mt="10px"
         onClick={submitHandler}
         isLoading={loading}
       >
-        Login
+        Log In
       </Button>
 
       <Button
-        variant="solid"
-        colorScheme="orange"
+        variant="outline"
+        borderColor="var(--wa-accent)"
+        color="var(--wa-accent-light)"
+        _hover={{ bg: "rgba(0, 168, 132, 0.1)" }}
         width="100%"
         onClick={fillDemoCredentials}
       >
