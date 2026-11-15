@@ -10,6 +10,8 @@ const messageModel = mongoose.Schema(
     replyTo: { type: Object, default: null },
     reactions: { type: Object, default: {} },
     isDeleted: { type: Boolean, default: false },
+    expiresAt: { type: Date, default: null },
+    isEncrypted: { type: Boolean, default: false },
   },
   {
     timestamps: true,

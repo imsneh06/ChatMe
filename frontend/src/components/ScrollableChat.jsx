@@ -3,10 +3,38 @@ import React, { useEffect, useRef, useState } from "react";
 import { formatMessageTime } from "../config/formatTime.js";
 import VoiceNotePlayer from "./VoiceNotePlayer.jsx";
 import ImageLightbox from "./ImageLightbox.jsx";
-import { Image, Box } from "@chakra-ui/react";
+import { Image, Box, Text, Flex } from "@chakra-ui/react";
+import { FaLock, FaClock } from "react-icons/fa";
+import { BsStars } from "react-icons/bs";
+import { decryptE2EEMessage } from "../utils/crypto.js";
+
+const DecryptedTextMessage = ({ content, myPrivateKeyJwk, peerPublicKeyJwk }) => {
+  const [displayText, setDisplayText] = useState(() => {
+    if (typeof content === "string" && content.startsWith("E2EE::")) {
+      return "🔒 Decrypting...";
+    }
+    return content;
+  });
+
+  useEffect(() => {
+    let isMounted = true;
+    if (typeof content === "string" && content.startsWith("E2EE::")) {
+      decryptE2EEMessage(content, myPrivateKeyJwk, peerPublicKeyJwk).then((res) => {
+        if (isMounted) setDisplayText(res);
+      });
+    } else {
+      setDisplayText(content);
+    }
+    return () => {
+      isMounted = false;
+    };
+  }, [content, myPrivateKeyJwk, peerPublicKeyJwk]);
+
+  return <span style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{displayText}</span>;
+};
 
 const ScrollableChat = ({ messages, isGroupChat, onReply, onReaction, onDelete }) => {
-  const { user } = ChatState();
+  const { user, selectedChat, e2eeKeys } = ChatState();
   const bottomRef = useRef(null);
   const [lightboxImg, setLightboxImg] = useState(null);
   const [lightboxSender, setLightboxSender] = useState("");
@@ -14,6 +42,32 @@ const ScrollableChat = ({ messages, isGroupChat, onReply, onReaction, onDelete }
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // Find 1-on-1 peer user and their public key
+  const peerUser =
+    !isGroupChat && selectedChat?.users
+      ? selectedChat.users.find((u) => String(u._id || u) !== String(user?._id))
+      : null;
+
+  let peerPublicKeyJwk = null;
+  if (peerUser && peerUser.publicKey) {
+    try {
+      peerPublicKeyJwk =
+        typeof peerUser.publicKey === "string"
+          ? JSON.parse(peerUser.publicKey)
+          : peerUser.publicKey;
+    } catch (e) {
+      peerPublicKeyJwk = null;
+    }
+  }
+
+  const disappearingTimer = Number(selectedChat?.disappearingTimer) || 0;
+  const disappearingLabel =
+    disappearingTimer === 86400
+      ? "24 hours"
+      : disappearingTimer === 604800
+      ? "7 days"
+      : null;
 
   const DoubleTick = () => (
     <svg
@@ -30,9 +84,67 @@ const ScrollableChat = ({ messages, isGroupChat, onReply, onReaction, onDelete }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+      {/* WhatsApp End-to-End Encryption Banner */}
+      <Box
+        textAlign="center"
+        my="8px"
+        p="8px 16px"
+        bg="rgba(17, 27, 33, 0.75)"
+        borderRadius="8px"
+        maxW="540px"
+        mx="auto"
+        border="1px solid rgba(255, 215, 0, 0.15)"
+        boxShadow="0 1px 3px rgba(0,0,0,0.2)"
+      >
+        <Text
+          fontSize="12px"
+          color="#ffd279"
+          fontWeight="500"
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
+          gap="6px"
+        >
+          <FaLock fontSize="11px" /> Messages and calls are end-to-end encrypted. No one outside of this chat, not even ChatMe, can read or listen to them.
+        </Text>
+      </Box>
+
+      {/* Disappearing Messages Active Banner */}
+      {disappearingLabel && (
+        <Box
+          textAlign="center"
+          mb="6px"
+          p="6px 14px"
+          bg="rgba(17, 27, 33, 0.75)"
+          borderRadius="8px"
+          maxW="420px"
+          mx="auto"
+          border="1px solid rgba(255, 255, 255, 0.08)"
+        >
+          <Text
+            fontSize="11px"
+            color="var(--wa-text-secondary)"
+            fontWeight="500"
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+            gap="6px"
+          >
+            <FaClock fontSize="11px" color="var(--wa-accent-light)" />
+            New messages in this chat will disappear after {disappearingLabel}.
+          </Text>
+        </Box>
+      )}
+
       {messages &&
         messages.map((m) => {
-          const isSender = String(m.sender?._id || m.sender) === String(user?._id);
+          const senderId = String(m.sender?._id || m.sender);
+          const isSender = senderId === String(user?._id);
+          const isAi =
+            senderId === "user_gemini_ai" ||
+            m.sender?.email === "ai@chatme.internal" ||
+            m.sender?.isAi;
+
           const isAudio =
             m.messageType === "audio" ||
             m.content === "🎤 Voice message" ||
@@ -44,6 +156,10 @@ const ScrollableChat = ({ messages, isGroupChat, onReply, onReaction, onDelete }
             m.content === "📷 Photo" ||
             (typeof m.content === "string" && m.content.startsWith("📷 Photo")) ||
             (m.fileUrl && (m.fileUrl.match(/\.(jpeg|jpg|gif|png|webp)/i) || m.fileUrl.includes("image/upload") || m.fileUrl.startsWith("data:image")));
+
+          const isEncrypted =
+            m.isEncrypted ||
+            (typeof m.content === "string" && m.content.startsWith("E2EE::"));
 
           // Group reactions by emoji from { [userId]: emoji }
           const reactionCounts = {};
@@ -99,24 +215,50 @@ const ScrollableChat = ({ messages, isGroupChat, onReply, onReaction, onDelete }
                     title="Reply"
                     onClick={() => onReply && onReply(m)}
                   >
-                    ↩
+                    ↩️
                   </button>
                   {isSender && (
                     <button
                       className="wa-action-btn"
-                      title="Delete"
+                      title="Delete message"
                       onClick={() => onDelete && onDelete(m._id)}
                     >
-                      🗑
+                      🗑️
                     </button>
                   )}
                 </div>
 
-                {/* Sender Name in Group Chat */}
-                {!isSender && isGroupChat && (
-                  <div className="wa-group-sender">
+                {/* Sender Name in group chats */}
+                {isGroupChat && !isSender && (
+                  <div
+                    style={{
+                      fontSize: "12px",
+                      fontWeight: "bold",
+                      color: isAi ? "var(--wa-accent-light)" : "var(--wa-accent)",
+                      marginBottom: "2px",
+                    }}
+                  >
                     {m.sender?.name || "Participant"}
                   </div>
+                )}
+
+                {/* Gemini AI Assistant Badge */}
+                {isAi && (
+                  <Flex
+                    align="center"
+                    gap="5px"
+                    mb="6px"
+                    px="7px"
+                    py="2px"
+                    bg="rgba(0, 168, 132, 0.18)"
+                    borderRadius="4px"
+                    w="fit-content"
+                  >
+                    <BsStars color="#25D366" fontSize="12px" />
+                    <Text fontSize="11px" fontWeight="bold" color="#25D366">
+                      Gemini AI Assistant
+                    </Text>
+                  </Flex>
                 )}
 
                 {/* Quoted / Replied message preview */}
@@ -181,13 +323,33 @@ const ScrollableChat = ({ messages, isGroupChat, onReply, onReaction, onDelete }
                       !isImage &&
                       m.content !== "🎤 Voice message" &&
                       m.content !== "📷 Photo" && (
-                        <span>{m.content}</span>
+                        <DecryptedTextMessage
+                          content={m.content}
+                          myPrivateKeyJwk={e2eeKeys?.privateKeyJwk}
+                          peerPublicKeyJwk={peerPublicKeyJwk}
+                        />
                       )}
                   </>
                 )}
 
-                {/* Meta: Time and Status Ticks */}
+                {/* Meta: Time, E2EE / Clock Icon, and Status Ticks */}
                 <span className="wa-meta">
+                  {isEncrypted && (
+                    <FaLock
+                      fontSize="9px"
+                      color="var(--wa-accent-light)"
+                      style={{ marginRight: "3px", display: "inline" }}
+                      title="End-to-End Encrypted"
+                    />
+                  )}
+                  {m.expiresAt && (
+                    <FaClock
+                      fontSize="9px"
+                      color="var(--wa-text-secondary)"
+                      style={{ marginRight: "3px", display: "inline" }}
+                      title="Disappearing message"
+                    />
+                  )}
                   {formatMessageTime(m.createdAt || new Date())}
                   {isSender && !m.isDeleted && <DoubleTick />}
                 </span>

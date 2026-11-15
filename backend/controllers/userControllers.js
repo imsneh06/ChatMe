@@ -84,4 +84,15 @@ const deleteUserProfile = asyncHandler(async (req, res) => {
   }
 });
 
-module.exports = { registerUser, authUser, allUsers, deleteUserProfile };
+const updateUserKeys = asyncHandler(async (req, res) => {
+  const { publicKey } = req.body;
+  if (!publicKey) {
+    res.status(400);
+    throw new Error("Public key is required");
+  }
+
+  const updatedUser = await storageService.updateUserPublicKey(req.user._id, publicKey);
+  res.json({ message: "Key updated successfully", user: updatedUser });
+});
+
+module.exports = { registerUser, authUser, allUsers, deleteUserProfile, updateUserKeys };

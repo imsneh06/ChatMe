@@ -15,6 +15,7 @@ import { ChatState } from "../Context/ChatProvider.jsx";
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { AddIcon, SearchIcon } from "@chakra-ui/icons";
+import { FaClock } from "react-icons/fa";
 import ChatLoading from "./ChatLoading.jsx";
 import { getSender, getSenderDetails } from "../config/ChatLogics.jsx";
 import GroupChatModal from "./miscellaneous/GroupChatModal.jsx";
@@ -179,6 +180,11 @@ const MyChats = ({ fetchAgain }) => {
                     </Box>
 
                     <Box display="flex" alignItems="center" mt="2px">
+                      {chat.disappearingTimer > 0 && (
+                        <Box as="span" mr="4px" color="var(--wa-accent-light)">
+                          <FaClock fontSize="10px" />
+                        </Box>
+                      )}
                       <Text
                         fontSize="13.5px"
                         color="var(--wa-text-secondary)"
@@ -193,7 +199,12 @@ const MyChats = ({ fetchAgain }) => {
                             chat.isGroupChat
                               ? `${chat.latestMessage.sender?.name || ""}: `
                               : ""
-                          }${chat.latestMessage.content}`
+                          }${
+                            typeof chat.latestMessage.content === "string" &&
+                            chat.latestMessage.content.startsWith("E2EE::")
+                              ? "🔒 Encrypted message"
+                              : chat.latestMessage.content
+                          }`
                         ) : (
                           "Tap to chat"
                         )}

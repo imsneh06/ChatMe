@@ -42,6 +42,14 @@ class StorageService {
         password: "password123",
         pic: "https://icon-library.com/images/anonymous-avatar-icon/anonymous-avatar-icon-25.jpg",
       },
+      {
+        _id: "user_gemini_ai",
+        name: "Gemini AI",
+        email: "ai@chatme.internal",
+        password: "gemini_secure_password_ai",
+        pic: "https://upload.wikimedia.org/wikipedia/commons/8/8a/Google_Gemini_logo.svg",
+        isAi: true,
+      },
     ];
 
     this.initUpstash();
@@ -62,7 +70,7 @@ class StorageService {
     }
   }
 
-  async seedUpstashUser({ _id, name, email, password, pic }) {
+  async seedUpstashUser({ _id, name, email, password, pic, isAi }) {
     if (!this.upstashClient) return null;
     try {
       const cleanEmail = email.toLowerCase().trim();
@@ -74,6 +82,8 @@ class StorageService {
         email: cleanEmail,
         password: hashedPassword,
         pic: pic || "https://icon-library.com/images/anonymous-avatar-icon/anonymous-avatar-icon-25.jpg",
+        publicKey: null,
+        isAi: !!isAi,
         createdAt: new Date().toISOString(),
       };
       await this.upstashClient.set(`user:${_id}`, JSON.stringify(userObj));
@@ -122,6 +132,8 @@ class StorageService {
         email: u.email.toLowerCase(),
         password: hashedPassword,
         pic: u.pic,
+        publicKey: null,
+        isAi: !!u.isAi,
         createdAt: new Date().toISOString(),
       };
       this.memoryUsers.set(u._id, userObj);
@@ -377,6 +389,8 @@ class StorageService {
               name: seeded.name,
               email: seeded.email,
               pic: seeded.pic,
+              publicKey: seeded.publicKey || null,
+              isAi: !!seeded.isAi,
             };
           }
         }
@@ -388,6 +402,8 @@ class StorageService {
         name: user.name,
         email: user.email,
         pic: user.pic,
+        publicKey: user.publicKey || null,
+        isAi: !!user.isAi,
       };
     }
 
@@ -398,6 +414,49 @@ class StorageService {
       name: user.name,
       email: user.email,
       pic: user.pic,
+      publicKey: user.publicKey || null,
+      isAi: !!user.isAi,
+    };
+  }
+
+  async updateUserPublicKey(userId, publicKey) {
+    const mode = this.getMode();
+    const uId = String(userId);
+
+    if (mode === "mongodb") {
+      return await User.findByIdAndUpdate(
+        userId,
+        { publicKey },
+        { new: true }
+      ).select("-password");
+    }
+
+    if (mode === "upstash") {
+      const raw = await this.upstashClient.get(`user:${uId}`);
+      if (!raw) return null;
+      const user = typeof raw === "string" ? JSON.parse(raw) : raw;
+      user.publicKey = publicKey;
+      await this.upstashClient.set(`user:${uId}`, JSON.stringify(user));
+      return {
+        _id: String(user._id),
+        name: user.name,
+        email: user.email,
+        pic: user.pic,
+        publicKey: user.publicKey,
+        isAi: !!user.isAi,
+      };
+    }
+
+    const user = this.memoryUsers.get(uId);
+    if (!user) return null;
+    user.publicKey = publicKey;
+    return {
+      _id: String(user._id),
+      name: user.name,
+      email: user.email,
+      pic: user.pic,
+      publicKey: user.publicKey,
+      isAi: !!user.isAi,
     };
   }
 
@@ -448,6 +507,8 @@ class StorageService {
         name: u.name,
         email: u.email,
         pic: u.pic,
+        publicKey: u.publicKey || null,
+        isAi: !!u.isAi,
       }));
   }
 
@@ -508,6 +569,7 @@ class StorageService {
         isGroupChat: false,
         users: [user1, user2].filter(Boolean),
         latestMessage: null,
+        disappearingTimer: 0,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
@@ -539,6 +601,7 @@ class StorageService {
       isGroupChat: false,
       users: [user1, user2].filter(Boolean),
       latestMessage: null,
+      disappearingTimer: 0,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -619,6 +682,7 @@ class StorageService {
       users: resolvedUsers,
       groupAdmin: admin,
       latestMessage: null,
+      disappearingTimer: 0,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -760,6 +824,38 @@ class StorageService {
     return chat;
   }
 
+  async updateChatDisappearing({ chatId, disappearingTimer }) {
+    const mode = this.getMode();
+    const timerVal = Number(disappearingTimer) || 0;
+
+    if (mode === "mongodb") {
+      return await Chat.findByIdAndUpdate(
+        chatId,
+        { disappearingTimer: timerVal },
+        { new: true }
+      )
+        .populate("users", "-password")
+        .populate("groupAdmin", "-password");
+    }
+
+    const chat = await this.getChatById(chatId);
+    if (!chat) {
+      const error = new Error("Chat Not Found");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    chat.disappearingTimer = timerVal;
+    chat.updatedAt = new Date().toISOString();
+
+    if (mode === "upstash") {
+      await this.upstashClient.set(`chat:${chatId}`, JSON.stringify(chat));
+    } else {
+      this.memoryChats.set(String(chatId), chat);
+    }
+    return chat;
+  }
+
   async getChatById(chatId) {
     const mode = this.getMode();
 
@@ -780,8 +876,20 @@ class StorageService {
 
   // ================= MESSAGES =================
 
-  async createMessage({ senderId, content, chatId, messageType = "text", fileUrl = null, replyTo = null }) {
+  async createMessage({ senderId, content, chatId, messageType = "text", fileUrl = null, replyTo = null, isEncrypted = false }) {
     const mode = this.getMode();
+
+    const chat = await this.getChatById(chatId);
+    if (!chat) {
+      const error = new Error("Chat not found");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const disappearingTimer = Number(chat.disappearingTimer) || 0;
+    const expiresAt = disappearingTimer > 0
+      ? new Date(Date.now() + disappearingTimer * 1000).toISOString()
+      : null;
 
     if (mode === "mongodb") {
       let message = await Message.create({
@@ -791,6 +899,8 @@ class StorageService {
         messageType: messageType || "text",
         fileUrl: fileUrl || null,
         replyTo: replyTo || null,
+        isEncrypted: !!isEncrypted,
+        expiresAt: expiresAt ? new Date(expiresAt) : null,
       });
 
       message = await message.populate("sender", "name pic email");
@@ -805,12 +915,6 @@ class StorageService {
     }
 
     const sender = await this.findUserById(senderId);
-    const chat = await this.getChatById(chatId);
-    if (!chat) {
-      const error = new Error("Chat not found");
-      error.statusCode = 404;
-      throw error;
-    }
 
     const messageId = `m_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
     const displayContent = content || (messageType === "image" ? "📷 Photo" : messageType === "audio" ? "🎤 Voice message" : "📎 File");
@@ -829,11 +933,14 @@ class StorageService {
       replyTo,
       reactions: {},
       isDeleted: false,
+      isEncrypted: !!isEncrypted,
+      expiresAt,
       chat: {
         _id: chat._id,
         chatName: chat.chatName,
         isGroupChat: chat.isGroupChat,
         users: chat.users,
+        disappearingTimer,
       },
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -843,7 +950,11 @@ class StorageService {
     chat.updatedAt = messageObj.updatedAt;
 
     if (mode === "upstash") {
-      await this.upstashClient.set(`message:${messageId}`, JSON.stringify(messageObj));
+      if (disappearingTimer > 0) {
+        await this.upstashClient.set(`message:${messageId}`, JSON.stringify(messageObj), { ex: disappearingTimer });
+      } else {
+        await this.upstashClient.set(`message:${messageId}`, JSON.stringify(messageObj));
+      }
       await this.upstashClient.rpush(`chat:messages:${chatId}`, messageId);
       await this.upstashClient.set(`chat:${chatId}`, JSON.stringify(chat));
       return messageObj;
@@ -862,9 +973,13 @@ class StorageService {
 
   async getChatMessages(chatId) {
     const mode = this.getMode();
+    const now = new Date();
 
     if (mode === "mongodb") {
-      return await Message.find({ chat: chatId })
+      return await Message.find({
+        chat: chatId,
+        $or: [{ expiresAt: null }, { expiresAt: { $gt: now } }],
+      })
         .populate("sender", "name pic email")
         .populate("chat");
     }
@@ -875,13 +990,19 @@ class StorageService {
       for (const mid of messageIds) {
         const raw = await this.upstashClient.get(`message:${mid}`);
         if (raw) {
-          messages.push(typeof raw === "string" ? JSON.parse(raw) : raw);
+          const msg = typeof raw === "string" ? JSON.parse(raw) : raw;
+          if (msg.expiresAt && new Date(msg.expiresAt) <= now) {
+            continue; // expired
+          }
+          messages.push(msg);
         }
       }
       return messages;
     }
 
-    return this.memoryChatMessages.get(String(chatId)) || [];
+    return (this.memoryChatMessages.get(String(chatId)) || []).filter(
+      (m) => !m.expiresAt || new Date(m.expiresAt) > now
+    );
   }
 
   async updateMessageReaction({ messageId, userId, emoji }) {

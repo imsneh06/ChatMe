@@ -194,6 +194,43 @@ io.on("connection", (socket) => {
     }
   });
 
+  // ================= WebRTC 1-on-1 Signaling =================
+  socket.on("call:user", ({ userToCall, signalData, from, fromName, fromPic, isVideo }) => {
+    if (userToCall) {
+      io.to(String(userToCall)).emit("call:incoming", {
+        signal: signalData,
+        from,
+        fromName,
+        fromPic,
+        isVideo: !!isVideo,
+      });
+    }
+  });
+
+  socket.on("call:accept", ({ to, signalData }) => {
+    if (to) {
+      io.to(String(to)).emit("call:accepted", { signal: signalData });
+    }
+  });
+
+  socket.on("call:ice-candidate", ({ to, candidate }) => {
+    if (to) {
+      io.to(String(to)).emit("call:ice-candidate", { candidate });
+    }
+  });
+
+  socket.on("call:end", ({ to }) => {
+    if (to) {
+      io.to(String(to)).emit("call:ended");
+    }
+  });
+
+  socket.on("call:reject", ({ to }) => {
+    if (to) {
+      io.to(String(to)).emit("call:rejected");
+    }
+  });
+
   socket.on("disconnect", () => {
     const userId = onlineUsers.get(socket.id);
     if (userId) {

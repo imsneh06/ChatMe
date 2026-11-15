@@ -6,6 +6,10 @@ import {
   FormControl,
   IconButton,
   Input,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItem,
   Spinner,
   Text,
   Tooltip,
@@ -20,6 +24,7 @@ import {
   DeleteIcon,
   SearchIcon,
 } from "@chakra-ui/icons";
+import { FaPhoneAlt, FaVideo, FaClock } from "react-icons/fa";
 import { getSender, getSenderDetails } from "../config/ChatLogics.jsx";
 import Profile from "./miscellaneous/Profile.jsx";
 import UpdateGroupChatModal from "./miscellaneous/UpdateGroupChatModal.jsx";
@@ -28,6 +33,7 @@ import "./Css/styles.css";
 import ScrollableChat from "./ScrollableChat.jsx";
 import io from "socket.io-client";
 import { getBackendUrl } from "../config/api.js";
+import { encryptE2EEMessage } from "../utils/crypto.js";
 
 const apiUrl = getBackendUrl();
 
@@ -40,6 +46,8 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
     setNotification,
     onlineUsers,
     socket,
+    startCall,
+    e2eeKeys,
   } = ChatState();
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -156,11 +164,18 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
       }
     };
 
+    const handleDisappearingUpdated = ({ chatId, disappearingTimer }) => {
+      if (selectedChatCompareRef.current?._id === chatId) {
+        setSelectedChat((prev) => ({ ...prev, disappearingTimer }));
+      }
+    };
+
     socket.on("typing", handleTyping);
     socket.on("stop typing", handleStopTyping);
     socket.on("message reaction", handleReaction);
     socket.on("delete message", handleDelete);
     socket.on("message recieved", handleMessageReceived);
+    socket.on("chat:disappearing-updated", handleDisappearingUpdated);
 
     return () => {
       socket.off("typing", handleTyping);
@@ -168,6 +183,7 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
       socket.off("message reaction", handleReaction);
       socket.off("delete message", handleDelete);
       socket.off("message recieved", handleMessageReceived);
+      socket.off("chat:disappearing-updated", handleDisappearingUpdated);
     };
   }, [socket, user]);
 
@@ -183,6 +199,44 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
     }
   }, [selectedChat, socket]);
 
+  // Disappearing messages handler
+  const handleSetDisappearing = async (seconds) => {
+    try {
+      const config = {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${user.token}`,
+        },
+      };
+      await axios.put(
+        `${apiUrl}/api/chat/disappearing`,
+        { chatId: selectedChat._id, disappearingTimer: seconds },
+        config
+      );
+      setSelectedChat((prev) => ({ ...prev, disappearingTimer: seconds }));
+      toast({
+        title: "Disappearing Messages",
+        description:
+          seconds > 0
+            ? `Messages will disappear after ${seconds === 86400 ? "24 hours" : "7 days"}`
+            : "Disappearing messages turned off",
+        status: "info",
+        duration: 3000,
+        isClosable: true,
+        position: "top",
+      });
+    } catch (err) {
+      toast({
+        title: "Failed to update timer",
+        description: err.response?.data?.message || err.message,
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+        position: "bottom",
+      });
+    }
+  };
+
   // Send message API call
   const sendActualMessage = async ({ content, messageType = "text", fileUrl = null }) => {
     try {
@@ -193,11 +247,41 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
         },
       };
 
+      let finalContent = content || "";
+      let isEncrypted = false;
+
+      // Encrypt 1-on-1 text messages if recipient has public key registered
+      if (
+        messageType === "text" &&
+        !selectedChat.isGroupChat &&
+        otherUser?.publicKey &&
+        e2eeKeys?.privateKeyJwk
+      ) {
+        try {
+          const peerPub =
+            typeof otherUser.publicKey === "string"
+              ? JSON.parse(otherUser.publicKey)
+              : otherUser.publicKey;
+          const cipher = await encryptE2EEMessage(
+            finalContent,
+            e2eeKeys.privateKeyJwk,
+            peerPub
+          );
+          if (cipher && cipher.startsWith("E2EE::")) {
+            finalContent = cipher;
+            isEncrypted = true;
+          }
+        } catch (encErr) {
+          console.warn("E2EE encryption warning:", encErr);
+        }
+      }
+
       const payload = {
-        content: content || "",
+        content: finalContent,
         chatId: selectedChat._id,
         messageType,
         fileUrl,
+        isEncrypted,
         replyTo: replyingTo
           ? {
               _id: replyingTo._id,
@@ -564,7 +648,90 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
               </Box>
             </Box>
 
-            <Box display="flex" alignItems="center" gap="6px">
+            <Box display="flex" alignItems="center" gap="4px">
+              {/* Disappearing Messages menu */}
+              <Menu>
+                <Tooltip
+                  label={`Disappearing messages: ${
+                    selectedChat.disappearingTimer === 86400
+                      ? "24 hours"
+                      : selectedChat.disappearingTimer === 604800
+                      ? "7 days"
+                      : "Off"
+                  }`}
+                  hasArrow
+                >
+                  <MenuButton
+                    as={IconButton}
+                    aria-label="Disappearing Messages"
+                    icon={<FaClock fontSize="15px" />}
+                    size="sm"
+                    variant="ghost"
+                    color={
+                      selectedChat.disappearingTimer > 0
+                        ? "var(--wa-accent-light)"
+                        : "var(--wa-icon-gray)"
+                    }
+                    _hover={{ bg: "var(--wa-hover-bg)" }}
+                  />
+                </Tooltip>
+                <MenuList bg="var(--wa-bg-panel)" borderColor="var(--wa-border)">
+                  <MenuItem
+                    bg="var(--wa-bg-panel)"
+                    color="var(--wa-text-primary)"
+                    _hover={{ bg: "var(--wa-bg-hover)" }}
+                    onClick={() => handleSetDisappearing(0)}
+                  >
+                    Off {!selectedChat.disappearingTimer && " ✓"}
+                  </MenuItem>
+                  <MenuItem
+                    bg="var(--wa-bg-panel)"
+                    color="var(--wa-text-primary)"
+                    _hover={{ bg: "var(--wa-bg-hover)" }}
+                    onClick={() => handleSetDisappearing(86400)}
+                  >
+                    24 Hours {selectedChat.disappearingTimer === 86400 && " ✓"}
+                  </MenuItem>
+                  <MenuItem
+                    bg="var(--wa-bg-panel)"
+                    color="var(--wa-text-primary)"
+                    _hover={{ bg: "var(--wa-bg-hover)" }}
+                    onClick={() => handleSetDisappearing(604800)}
+                  >
+                    7 Days {selectedChat.disappearingTimer === 604800 && " ✓"}
+                  </MenuItem>
+                </MenuList>
+              </Menu>
+
+              {/* 1-on-1 WebRTC Voice & Video Calling */}
+              {!selectedChat.isGroupChat && !otherUser?.isDeleted && !otherUser?.isAi && (
+                <>
+                  <Tooltip label="Voice Call" hasArrow>
+                    <IconButton
+                      aria-label="Voice Call"
+                      icon={<FaPhoneAlt fontSize="14px" />}
+                      size="sm"
+                      variant="ghost"
+                      color="var(--wa-icon-gray)"
+                      _hover={{ bg: "var(--wa-hover-bg)", color: "var(--wa-accent-light)" }}
+                      onClick={() => startCall({ userToCall: otherUser, isVideo: false })}
+                    />
+                  </Tooltip>
+
+                  <Tooltip label="Video Call" hasArrow>
+                    <IconButton
+                      aria-label="Video Call"
+                      icon={<FaVideo fontSize="15px" />}
+                      size="sm"
+                      variant="ghost"
+                      color="var(--wa-icon-gray)"
+                      _hover={{ bg: "var(--wa-hover-bg)", color: "var(--wa-accent-light)" }}
+                      onClick={() => startCall({ userToCall: otherUser, isVideo: true })}
+                    />
+                  </Tooltip>
+                </>
+              )}
+
               <Tooltip label={showSearch ? "Close search" : "Search in chat"} hasArrow>
                 <IconButton
                   aria-label="Search chat"

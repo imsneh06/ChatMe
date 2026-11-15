@@ -121,6 +121,35 @@ const deleteChat = asyncHandler(async (req, res) => {
   }
 });
 
+const updateDisappearingTimer = asyncHandler(async (req, res) => {
+  const { chatId, disappearingTimer } = req.body;
+
+  if (!chatId || disappearingTimer === undefined) {
+    return res.status(400).send({ message: "chatId and disappearingTimer are required" });
+  }
+
+  try {
+    const updated = await storageService.updateChatDisappearing({
+      chatId,
+      disappearingTimer: Number(disappearingTimer),
+    });
+
+    const io = req.app.get("io");
+    if (io) {
+      io.to(String(chatId)).emit("chat:disappearing-updated", {
+        chatId,
+        disappearingTimer: Number(disappearingTimer),
+        updatedBy: req.user.name,
+      });
+    }
+
+    res.json(updated);
+  } catch (error) {
+    res.status(error.statusCode || 400);
+    throw new Error(error.message);
+  }
+});
+
 module.exports = {
   accessChat,
   fetchChats,
@@ -129,4 +158,5 @@ module.exports = {
   addToGroup,
   removeFromGroup,
   deleteChat,
+  updateDisappearingTimer,
 };

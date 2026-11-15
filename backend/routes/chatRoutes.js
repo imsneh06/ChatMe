@@ -8,6 +8,7 @@ const {
   addToGroup,
   removeFromGroup,
   deleteChat,
+  updateDisappearingTimer,
 } = require("../controllers/chatControllers.js");
 
 const router = express.Router();
@@ -18,6 +19,7 @@ router.route("/group").post(protect, createGroupChat);
 router.route("/rename").put(protect, renameGroup);
 router.route("/groupadd").put(protect, addToGroup);
 router.route("/groupremove").put(protect, removeFromGroup);
+router.route("/disappearing").put(protect, updateDisappearingTimer);
 router.route("/:chatId").delete(protect, deleteChat);
 
 module.exports = router;
