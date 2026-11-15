@@ -12,6 +12,17 @@ const registerUser = asyncHandler(async (req, res) => {
 
   try {
     const user = await storageService.createUser({ name, email, password, pic });
+
+    const io = req.app.get("io");
+    if (io) {
+      io.emit("new user registered", {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        pic: user.pic,
+      });
+    }
+
     res.status(201).json({
       _id: user._id,
       name: user.name,

@@ -20,7 +20,7 @@ import {
   useDisclosure,
   useToast,
 } from "@chakra-ui/react";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   BellIcon,
   ChevronDownIcon,
@@ -54,6 +54,7 @@ const SideDrawer = () => {
     setNotification,
     darkMode,
     toggleDarkMode,
+    socket,
   } = ChatState();
   const navigate = useNavigate();
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -66,44 +67,59 @@ const SideDrawer = () => {
     navigate("/");
   };
 
-  const handleSearch = async () => {
-    if (!search.trim()) {
-      toast({
-        title: "Please enter a name or email to search",
-        status: "warning",
-        duration: 3000,
-        isClosable: true,
-        position: "top-left",
-      });
-      return;
-    }
+  const fetchContacts = async (query = "") => {
+    if (!user?.token) return;
     try {
       setLoading(true);
-
       const config = {
         headers: {
           Authorization: `Bearer ${user.token}`,
         },
       };
 
-      const { data } = await axios.get(
-        `${apiUrl}/api/user?search=${search}`,
-        config
-      );
+      const url = query.trim()
+        ? `${apiUrl}/api/user?search=${encodeURIComponent(query.trim())}`
+        : `${apiUrl}/api/user`;
 
+      const { data } = await axios.get(url, config);
       setLoading(false);
-      setSearchResult(data);
+      setSearchResult(data || []);
     } catch (error) {
       setLoading(false);
-      toast({
-        title: "Error searching users",
-        description: error.response?.data?.message || error.message,
-        status: "error",
-        duration: 4000,
-        isClosable: true,
-        position: "bottom-left",
-      });
     }
+  };
+
+  // Automatically load existing contacts when drawer opens
+  useEffect(() => {
+    if (isOpen) {
+      setSearch("");
+      fetchContacts("");
+    }
+  }, [isOpen]);
+
+  // Real-time synchronization when a new user account is created anywhere
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleNewUser = (newUser) => {
+      if (newUser && String(newUser._id) !== String(user?._id)) {
+        setSearchResult((prev) => {
+          if (!prev.some((u) => String(u._id) === String(newUser._id))) {
+            return [newUser, ...prev];
+          }
+          return prev;
+        });
+      }
+    };
+
+    socket.on("new user registered", handleNewUser);
+    return () => {
+      socket.off("new user registered", handleNewUser);
+    };
+  }, [socket, user]);
+
+  const handleSearch = () => {
+    fetchContacts(search);
   };
 
   const accessChat = async (userId) => {
@@ -305,7 +321,10 @@ const SideDrawer = () => {
                 border="none"
                 color="var(--wa-text-primary)"
                 _focus={{ boxShadow: "none" }}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  fetchContacts(e.target.value);
+                }}
                 onKeyDown={(e) => e.key === "Enter" && handleSearch()}
               />
               <Button
@@ -320,14 +339,18 @@ const SideDrawer = () => {
             </Box>
             {loading ? (
               <ChatLoading />
-            ) : (
-              searchResult?.map((u) => (
+            ) : searchResult && searchResult.length > 0 ? (
+              searchResult.map((u) => (
                 <UserListItem
                   key={u._id}
                   user={u}
                   handleFunction={() => accessChat(u._id)}
                 />
               ))
+            ) : (
+              <Box textAlign="center" py="40px" color="var(--wa-text-secondary)" fontSize="14px">
+                No contacts found
+              </Box>
             )}
 
             {loadingChat && <Spinner ml="auto" display="flex" mt={4} />}

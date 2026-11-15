@@ -30,15 +30,20 @@ import io from "socket.io-client";
 import { getBackendUrl } from "../config/api.js";
 
 const apiUrl = getBackendUrl();
-let socket;
 
 const SingleChat = ({ fetchAgain, setFetchAgain }) => {
-  const { user, selectedChat, setSelectedChat, notification, setNotification, onlineUsers } =
-    ChatState();
+  const {
+    user,
+    selectedChat,
+    setSelectedChat,
+    notification,
+    setNotification,
+    onlineUsers,
+    socket,
+  } = ChatState();
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [newMessage, setNewMessage] = useState("");
-  const [socketConnected, setSocketConnected] = useState(false);
   const [typing, setTyping] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [showEmojis, setShowEmojis] = useState(false);
@@ -107,80 +112,76 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
 
   // Socket setup and listeners
   useEffect(() => {
-    if (!user) return;
+    if (!socket || !user) return;
 
-    socket = io(apiUrl);
-    socket.emit("setup", user);
-    socket.on("connected", () => setSocketConnected(true));
-
-    socket.on("typing", (room) => {
-      if (selectedChatCompareRef.current?._id === room) {
+    const handleTyping = (data) => {
+      const room = typeof data === "object" ? data.room : data;
+      const typerId = typeof data === "object" ? data.userId : null;
+      if (selectedChatCompareRef.current?._id === room && String(typerId) !== String(user._id)) {
         setIsTyping(true);
       }
-    });
+    };
 
-    socket.on("stop typing", (room) => {
+    const handleStopTyping = (data) => {
+      const room = typeof data === "object" ? data.room : data;
       if (selectedChatCompareRef.current?._id === room) {
         setIsTyping(false);
       }
-    });
+    };
 
-    // Real-time Reaction Listener
-    socket.on("message reaction", ({ messageId, emoji }) => {
+    const handleReaction = ({ messageId, reactions }) => {
       setMessages((prev) =>
-        prev.map((m) => {
-          if (m._id === messageId) {
-            const rx = { ...(m.reactions || {}) };
-            rx[emoji] = (rx[emoji] || 0) + 1;
-            return { ...m, reactions: rx };
-          }
-          return m;
-        })
+        prev.map((m) =>
+          m._id === messageId ? { ...m, reactions: reactions || {} } : m
+        )
       );
-    });
+    };
 
-    // Real-time Delete Listener
-    socket.on("delete message", ({ messageId }) => {
+    const handleDelete = ({ messageId }) => {
       setMessages((prev) =>
         prev.map((m) => (m._id === messageId ? { ...m, isDeleted: true } : m))
       );
-    });
+    };
+
+    const handleMessageReceived = (newMessageRecieved) => {
+      const currentChat = selectedChatCompareRef.current;
+      const incomingChatId =
+        newMessageRecieved.chat?._id || newMessageRecieved.chat;
+
+      if (currentChat && String(currentChat._id) === String(incomingChatId)) {
+        setMessages((prev) => {
+          if (prev.some((m) => m._id === newMessageRecieved._id)) return prev;
+          return [...prev, newMessageRecieved];
+        });
+      }
+    };
+
+    socket.on("typing", handleTyping);
+    socket.on("stop typing", handleStopTyping);
+    socket.on("message reaction", handleReaction);
+    socket.on("delete message", handleDelete);
+    socket.on("message recieved", handleMessageReceived);
 
     return () => {
-      socket.disconnect();
+      socket.off("typing", handleTyping);
+      socket.off("stop typing", handleStopTyping);
+      socket.off("message reaction", handleReaction);
+      socket.off("delete message", handleDelete);
+      socket.off("message recieved", handleMessageReceived);
     };
-  }, [user]);
+  }, [socket, user]);
 
-  // Fetch messages on chat change
+  // Fetch messages and join chat room on chat change
   useEffect(() => {
     fetchMessages();
     selectedChatCompareRef.current = selectedChat;
     setIsTyping(false);
     setReplyingTo(null);
-  }, [selectedChat]);
 
-  // Message receiver socket listener
-  useEffect(() => {
-    if (!socket) return;
-
-    const handleMessageReceived = (newMessageRecieved) => {
-      const currentChat = selectedChatCompareRef.current;
-      if (!currentChat || currentChat._id !== newMessageRecieved.chat._id) {
-        if (!notification.some((n) => n._id === newMessageRecieved._id)) {
-          setNotification([newMessageRecieved, ...notification]);
-          setFetchAgain(!fetchAgain);
-        }
-      } else {
-        setMessages((prev) => [...prev, newMessageRecieved]);
-      }
-    };
-
-    socket.on("message recieved", handleMessageReceived);
-
-    return () => {
-      socket.off("message recieved", handleMessageReceived);
-    };
-  }, [selectedChat, notification, fetchAgain]);
+    if (socket && selectedChat?._id) {
+      socket.emit("join chat", selectedChat._id);
+    }
+  }, [selectedChat, socket]);
 
   // Send message API call
   const sendActualMessage = async ({ content, messageType = "text", fileUrl = null }) => {
@@ -232,7 +233,11 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
   const sendMessage = async (event) => {
     if ((event.key === "Enter" || event.type === "click") && newMessage.trim()) {
       if (socket && selectedChat) {
-        socket.emit("stop typing", selectedChat._id);
+        socket.emit("stop typing", {
+          room: selectedChat._id,
+          userId: user._id,
+        });
+        setTyping(false);
       }
       await sendActualMessage({ content: newMessage, messageType: "text" });
     }
@@ -241,20 +246,27 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
   const typingHandler = (e) => {
     setNewMessage(e.target.value);
 
-    if (!socketConnected || !selectedChat) return;
+    if (!socket || !selectedChat) return;
 
     if (!typing) {
       setTyping(true);
-      socket.emit("typing", selectedChat._id);
+      socket.emit("typing", {
+        room: selectedChat._id,
+        userId: user._id,
+        userName: user.name,
+      });
     }
     const lastTypingTime = new Date().getTime();
-    const timerLength = 3000;
+    const timerLength = 2500;
     setTimeout(() => {
       const timeNow = new Date().getTime();
       const timeDiff = timeNow - lastTypingTime;
 
       if (timeDiff >= timerLength && typing) {
-        socket.emit("stop typing", selectedChat._id);
+        socket.emit("stop typing", {
+          room: selectedChat._id,
+          userId: user._id,
+        });
         setTyping(false);
       }
     }, timerLength);
@@ -397,11 +409,17 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
 
   // ================= REACTIONS & ACTIONS =================
   const handleReaction = (messageId, emoji) => {
+    const uId = String(user?._id);
+
     setMessages((prev) =>
       prev.map((m) => {
         if (m._id === messageId) {
           const rx = { ...(m.reactions || {}) };
-          rx[emoji] = (rx[emoji] || 0) + 1;
+          if (rx[uId] === emoji) {
+            delete rx[uId]; // toggle off if same reaction clicked
+          } else {
+            rx[uId] = emoji; // set or replace with new reaction
+          }
           return { ...m, reactions: rx };
         }
         return m;
@@ -586,13 +604,24 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
                 <Spinner size="xl" color="var(--wa-accent)" />
               </Box>
             ) : (
-              <ScrollableChat
-                messages={displayedMessages}
-                isGroupChat={selectedChat.isGroupChat}
-                onReply={handleReplyMessage}
-                onReaction={handleReaction}
-                onDelete={handleDeleteMessage}
-              />
+              <>
+                <ScrollableChat
+                  messages={displayedMessages}
+                  isGroupChat={selectedChat.isGroupChat}
+                  onReply={handleReplyMessage}
+                  onReaction={handleReaction}
+                  onDelete={handleDeleteMessage}
+                />
+                {isTyping && (
+                  <Box px="16px" py="6px" display="flex" alignItems="center">
+                    <div className="wa-typing-bubble">
+                      <span className="wa-typing-dot"></span>
+                      <span className="wa-typing-dot"></span>
+                      <span className="wa-typing-dot"></span>
+                    </div>
+                  </Box>
+                )}
+              </>
             )}
           </Box>
 

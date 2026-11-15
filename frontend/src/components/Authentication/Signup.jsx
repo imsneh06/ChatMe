@@ -1,4 +1,6 @@
 import {
+  Avatar,
+  Box,
   Button,
   FormControl,
   FormLabel,
@@ -13,6 +15,7 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { ChatState } from "../../Context/ChatProvider.jsx";
 import { getBackendUrl } from "../../config/api.js";
+import ImageCropModal from "../miscellaneous/ImageCropModal.jsx";
 
 const Signup = () => {
   const apiUrl = getBackendUrl();
@@ -23,6 +26,8 @@ const Signup = () => {
   const [pic, setPic] = useState("");
   const [show, setShow] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [cropModalOpen, setCropModalOpen] = useState(false);
+  const [rawImageSrc, setRawImageSrc] = useState(null);
   const toast = useToast();
   const navigate = useNavigate();
   const { setUser } = ChatState();
@@ -31,58 +36,55 @@ const Signup = () => {
     setShow(!show);
   };
 
-  const postDetails = (pics) => {
-    setLoading(true);
-    if (!pics) {
+  const handleFileSelect = (file) => {
+    if (!file) return;
+    if (file.type !== "image/jpeg" && file.type !== "image/png" && file.type !== "image/webp") {
       toast({
-        title: "Please select an image!",
+        title: "Please select a valid image (JPEG/PNG/WEBP)!",
         status: "warning",
-        duration: 4000,
+        duration: 3000,
         isClosable: true,
         position: "bottom",
       });
-      setLoading(false);
       return;
     }
 
-    if (pics.type === "image/jpeg" || pics.type === "image/png") {
+    const reader = new FileReader();
+    reader.onload = () => {
+      setRawImageSrc(reader.result);
+      setCropModalOpen(true);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleCropComplete = async (croppedBlob, croppedDataUrl) => {
+    setPic(croppedDataUrl); // instant visual avatar feedback
+
+    try {
+      setLoading(true);
       const data = new FormData();
-      data.append("file", pics);
+      data.append("file", croppedBlob);
       data.append("upload_preset", "ChatMe");
       data.append("cloud_name", "dsdwziwqb");
-      axios
-        .post("https://api.cloudinary.com/v1_1/dsdwziwqb/image/upload", data)
-        .then((res) => {
-          setPic(res.data.url.toString());
-          setLoading(false);
-          toast({
-            title: "Image uploaded successfully!",
-            status: "success",
-            duration: 3000,
-            isClosable: true,
-            position: "bottom",
-          });
-        })
-        .catch(() => {
-          setLoading(false);
-          toast({
-            title: "Upload note",
-            description: "Default avatar will be used.",
-            status: "info",
-            duration: 3000,
-            isClosable: true,
-            position: "bottom",
-          });
-        });
-    } else {
+
+      const res = await axios.post(
+        "https://api.cloudinary.com/v1_1/dsdwziwqb/image/upload",
+        data
+      );
+      if (res.data?.secure_url || res.data?.url) {
+        setPic(res.data.secure_url || res.data.url);
+      }
+      setLoading(false);
       toast({
-        title: "Please select a JPEG or PNG image!",
-        status: "warning",
-        duration: 4000,
+        title: "Profile photo cropped & ready!",
+        status: "success",
+        duration: 3000,
         isClosable: true,
         position: "bottom",
       });
+    } catch (err) {
       setLoading(false);
+      console.warn("Cloudinary upload fallback to cropped data URL:", err.message);
     }
   };
 
@@ -244,17 +246,28 @@ const Signup = () => {
 
       <FormControl id="signup-pic">
         <FormLabel fontWeight="500" fontSize="14px" color="var(--wa-text-primary)">
-          Profile Picture (Optional)
+          Profile Picture (with Crop)
         </FormLabel>
-        <Input
-          bg="var(--wa-input-bg)"
-          color="var(--wa-text-primary)"
-          borderColor="var(--wa-border)"
-          type="file"
-          p={1}
-          accept="image/*"
-          onChange={(e) => postDetails(e.target.files[0])}
-        />
+        <Box display="flex" alignItems="center" gap={3}>
+          {pic && (
+            <Avatar
+              size="md"
+              src={pic}
+              border="2px solid var(--wa-accent)"
+              cursor="pointer"
+              onClick={() => rawImageSrc && setCropModalOpen(true)}
+            />
+          )}
+          <Input
+            bg="var(--wa-input-bg)"
+            color="var(--wa-text-primary)"
+            borderColor="var(--wa-border)"
+            type="file"
+            p={1}
+            accept="image/*"
+            onChange={(e) => handleFileSelect(e.target.files[0])}
+          />
+        </Box>
       </FormControl>
 
       <Button
@@ -268,6 +281,14 @@ const Signup = () => {
       >
         Sign Up
       </Button>
+
+      {/* Image Crop Modal */}
+      <ImageCropModal
+        isOpen={cropModalOpen}
+        onClose={() => setCropModalOpen(false)}
+        imageSrc={rawImageSrc}
+        onCropComplete={handleCropComplete}
+      />
     </VStack>
   );
 };

@@ -45,6 +45,25 @@ const ScrollableChat = ({ messages, isGroupChat, onReply, onReaction, onDelete }
             (typeof m.content === "string" && m.content.startsWith("📷 Photo")) ||
             (m.fileUrl && (m.fileUrl.match(/\.(jpeg|jpg|gif|png|webp)/i) || m.fileUrl.includes("image/upload") || m.fileUrl.startsWith("data:image")));
 
+          // Group reactions by emoji from { [userId]: emoji }
+          const reactionCounts = {};
+          let myReaction = null;
+          if (m.reactions && typeof m.reactions === "object") {
+            Object.entries(m.reactions).forEach(([uid, em]) => {
+              if (em) {
+                if (typeof em === "number" && ["❤️", "👍", "😂", "🔥", "🎉", "🙏", "😍"].includes(uid)) {
+                  reactionCounts[uid] = em;
+                } else if (typeof em === "string") {
+                  reactionCounts[em] = (reactionCounts[em] || 0) + 1;
+                  if (String(uid) === String(user?._id)) {
+                    myReaction = em;
+                  }
+                }
+              }
+            });
+          }
+          const hasReactions = Object.keys(reactionCounts).length > 0;
+
           return (
             <div
               key={m._id}
@@ -174,13 +193,41 @@ const ScrollableChat = ({ messages, isGroupChat, onReply, onReaction, onDelete }
                 </span>
 
                 {/* Reaction badge under bubble */}
-                {m.reactions && Object.keys(m.reactions).length > 0 && (
+                {hasReactions && (
                   <div
                     className="wa-reaction-badge"
-                    onClick={() => onReaction && onReaction(m._id, Object.keys(m.reactions)[0])}
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "4px",
+                      cursor: "pointer",
+                    }}
                   >
-                    {Object.entries(m.reactions).map(([emoji, count]) => (
-                      <span key={emoji}>
+                    {Object.entries(reactionCounts).map(([emoji, count]) => (
+                      <span
+                        key={emoji}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onReaction && onReaction(m._id, emoji);
+                        }}
+                        style={{
+                          padding: "1px 6px",
+                          borderRadius: "10px",
+                          backgroundColor:
+                            myReaction === emoji
+                              ? "rgba(0, 168, 132, 0.35)"
+                              : "transparent",
+                          border:
+                            myReaction === emoji
+                              ? "1px solid var(--wa-accent)"
+                              : "1px solid transparent",
+                        }}
+                        title={
+                          myReaction === emoji
+                            ? "Click to remove reaction"
+                            : `React ${emoji}`
+                        }
+                      >
                         {emoji} {count > 1 ? count : ""}
                       </span>
                     ))}

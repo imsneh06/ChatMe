@@ -82,6 +82,8 @@ const io = require("socket.io")(server, {
   },
 });
 
+app.set("io", io);
+
 // In-memory online presence tracking (0 Redis commands used)
 const onlineUsers = new Map(); // socket.id -> userId
 
@@ -89,50 +91,81 @@ io.on("connection", (socket) => {
   // Handles user setup and room creation
   socket.on("setup", (userData) => {
     if (userData && userData._id) {
-      socket.join(userData._id);
-      onlineUsers.set(socket.id, userData._id);
+      const uid = String(userData._id);
+      socket.join(uid);
+      onlineUsers.set(socket.id, uid);
       socket.emit("connected");
 
       // Broadcast and synchronize online users
       const activeIds = Array.from(new Set(onlineUsers.values()));
       socket.emit("online users", activeIds);
-      socket.broadcast.emit("user online", userData._id);
+      socket.broadcast.emit("user online", uid);
     }
   });
 
   // Handles user joining a chat room
   socket.on("join chat", (room) => {
     if (room) {
-      socket.join(room);
+      socket.join(String(room));
     }
   });
 
   // Emits typing status to the room
-  socket.on("typing", (room) => {
-    if (room) socket.in(room).emit("typing", room);
+  socket.on("typing", (data) => {
+    const room = typeof data === "object" ? data.room : data;
+    if (room) {
+      socket.to(String(room)).emit("typing", data);
+    }
   });
-  socket.on("stop typing", (room) => {
-    if (room) socket.in(room).emit("stop typing", room);
+
+  socket.on("stop typing", (data) => {
+    const room = typeof data === "object" ? data.room : data;
+    if (room) {
+      socket.to(String(room)).emit("stop typing", data);
+    }
   });
 
   // Handles message delivery and read receipts
   socket.on("read message", ({ chatId, messageId, readerId }) => {
     if (chatId) {
-      socket.in(chatId).emit("message read", { chatId, messageId, readerId });
+      io.to(String(chatId)).emit("message read", { chatId, messageId, readerId });
     }
   });
 
-  // Handles real-time emoji reactions
-  socket.on("message reaction", ({ chatId, messageId, emoji, userId }) => {
-    if (chatId) {
-      socket.in(chatId).emit("message reaction", { messageId, emoji, userId });
+  // Handles real-time emoji reactions with persistence
+  socket.on("message reaction", async ({ chatId, messageId, emoji, userId }) => {
+    try {
+      const updated = await storageService.updateMessageReaction({
+        messageId,
+        userId: String(userId),
+        emoji,
+      });
+
+      const reactions = updated ? updated.reactions : { [String(userId)]: emoji };
+
+      if (chatId) {
+        io.to(String(chatId)).emit("message reaction", {
+          chatId,
+          messageId,
+          reactions,
+          userId,
+          emoji,
+        });
+      }
+    } catch (err) {
+      console.log("Error handling message reaction:", err.message);
     }
   });
 
   // Handles real-time message deletion
-  socket.on("delete message", ({ chatId, messageId }) => {
-    if (chatId) {
-      socket.in(chatId).emit("delete message", { messageId });
+  socket.on("delete message", async ({ chatId, messageId }) => {
+    try {
+      await storageService.deleteMessage(messageId);
+      if (chatId) {
+        io.to(String(chatId)).emit("delete message", { chatId, messageId });
+      }
+    } catch (err) {
+      console.log("Error handling delete message:", err.message);
     }
   });
 
@@ -141,16 +174,24 @@ io.on("connection", (socket) => {
     const chat = newMessageRecieved && newMessageRecieved.chat;
     if (!chat || !chat.users) return;
 
-    chat.users.forEach((user) => {
-      const userId = typeof user === "object" ? user._id : user;
-      const senderId =
-        typeof newMessageRecieved.sender === "object"
-          ? newMessageRecieved.sender._id
-          : newMessageRecieved.sender;
+    const senderId = String(
+      typeof newMessageRecieved.sender === "object"
+        ? newMessageRecieved.sender._id
+        : newMessageRecieved.sender
+    );
 
-      if (String(userId) === String(senderId)) return;
-      socket.in(userId).emit("message recieved", newMessageRecieved);
+    chat.users.forEach((user) => {
+      const targetUserId = String(typeof user === "object" ? user._id : user);
+      if (targetUserId === senderId) return;
+
+      // Send to recipient's personal room
+      io.to(targetUserId).emit("message recieved", newMessageRecieved);
     });
+
+    // Also emit to the active chat room
+    if (chat._id) {
+      socket.to(String(chat._id)).emit("message recieved", newMessageRecieved);
+    }
   });
 
   socket.on("disconnect", () => {

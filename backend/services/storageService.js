@@ -787,6 +787,83 @@ class StorageService {
 
     return this.memoryChatMessages.get(String(chatId)) || [];
   }
+
+  async updateMessageReaction({ messageId, userId, emoji }) {
+    const mode = this.getMode();
+    const uId = String(userId);
+
+    if (mode === "mongodb") {
+      const msg = await Message.findById(messageId);
+      if (!msg) return null;
+      const rx = msg.reactions ? { ...msg.reactions } : {};
+      if (rx[uId] === emoji) {
+        delete rx[uId];
+      } else {
+        rx[uId] = emoji;
+      }
+      msg.reactions = rx;
+      msg.markModified("reactions");
+      await msg.save();
+      return msg;
+    }
+
+    if (mode === "upstash") {
+      const raw = await this.upstashClient.get(`message:${messageId}`);
+      if (!raw) return null;
+      const msg = typeof raw === "string" ? JSON.parse(raw) : raw;
+      const rx = msg.reactions ? { ...msg.reactions } : {};
+      if (rx[uId] === emoji) {
+        delete rx[uId];
+      } else {
+        rx[uId] = emoji;
+      }
+      msg.reactions = rx;
+      await this.upstashClient.set(`message:${messageId}`, JSON.stringify(msg));
+      return msg;
+    }
+
+    // Memory mode
+    const msg = this.memoryMessages.get(messageId);
+    if (!msg) return null;
+    const rx = msg.reactions ? { ...msg.reactions } : {};
+    if (rx[uId] === emoji) {
+      delete rx[uId];
+    } else {
+      rx[uId] = emoji;
+    }
+    msg.reactions = rx;
+    this.memoryMessages.set(messageId, msg);
+    return msg;
+  }
+
+  async deleteMessage(messageId) {
+    const mode = this.getMode();
+
+    if (mode === "mongodb") {
+      const msg = await Message.findByIdAndUpdate(
+        messageId,
+        { isDeleted: true },
+        { new: true }
+      );
+      return msg;
+    }
+
+    if (mode === "upstash") {
+      const raw = await this.upstashClient.get(`message:${messageId}`);
+      if (!raw) return null;
+      const msg = typeof raw === "string" ? JSON.parse(raw) : raw;
+      msg.isDeleted = true;
+      await this.upstashClient.set(`message:${messageId}`, JSON.stringify(msg));
+      return msg;
+    }
+
+    const msg = this.memoryMessages.get(messageId);
+    if (msg) {
+      msg.isDeleted = true;
+      this.memoryMessages.set(messageId, msg);
+    }
+    return msg;
+  }
 }
 
 const storageService = new StorageService();
