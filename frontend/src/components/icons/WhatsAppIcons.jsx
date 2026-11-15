@@ -258,3 +258,105 @@ export const WaLaughIcon = ({ size = 15, color = "currentColor", ...props }) => 
     <line x1="15" y1="9" x2="15.01" y2="9" strokeWidth="3" />
   </svg>
 );
+
+export const WaChatIcon = ({ size = 20, color = "currentColor", ...props }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill={color} {...props}>
+    <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H5.17L4 17.17V4h16v12z" />
+  </svg>
+);
+
+export const WaStatusIcon = ({ size = 20, color = "currentColor", ...props }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.2" strokeLinecap="round" {...props}>
+    <path d="M12 2a10 10 0 0 1 7.07 2.93" />
+    <path d="M22 12a10 10 0 0 1-2.93 7.07" />
+    <path d="M12 22a10 10 0 0 1-7.07-2.93" />
+    <path d="M2 12a10 10 0 0 1 2.93-7.07" />
+  </svg>
+);
+
+export const WaCommunitiesIcon = ({ size = 20, color = "currentColor", ...props }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill={color} {...props}>
+    <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" />
+  </svg>
+);
+
+export const WaAiRingIcon = ({ size = 22, ...props }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...props}>
+    <circle cx="12" cy="12" r="9" stroke="url(#aiGrad)" strokeWidth="2.8" />
+    <defs>
+      <linearGradient id="aiGrad" x1="2" y1="2" x2="22" y2="22" gradientUnits="userSpaceOnUse">
+        <stop stopColor="#00A884" />
+        <stop offset="0.5" stopColor="#3B82F6" />
+        <stop offset="1" stopColor="#A855F7" />
+      </linearGradient>
+    </defs>
+  </svg>
+);
+
+export const WaCameraIcon = ({ size = 20, color = "currentColor", ...props }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+    <circle cx="12" cy="13" r="4" />
+  </svg>
+);
+
+export const WaDotsVerticalIcon = ({ size = 18, color = "currentColor", ...props }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill={color} {...props}>
+    <circle cx="12" cy="5" r="2" />
+    <circle cx="12" cy="12" r="2" />
+    <circle cx="12" cy="19" r="2" />
+  </svg>
+);
+
+export const WaNewChatIcon = ({ size = 20, color = "currentColor", ...props }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill={color} {...props}>
+    <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a.996.996 0 0 0 0-1.41l-2.34-2.34a.996.996 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
+  </svg>
+);
+
+export const WaSettingsIcon = ({ size = 20, color = "currentColor", ...props }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <circle cx="12" cy="12" r="3" />
+    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+  </svg>
+);
+
+export const WaArrowBackIcon = ({ size = 22, color = "currentColor", ...props }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <line x1="19" y1="12" x2="5" y2="12" />
+    <polyline points="12 19 5 12 12 5" />
+  </svg>
+);
+
+export const WaRupeeIcon = ({ size = 18, color = "currentColor", ...props }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <circle cx="12" cy="12" r="10" />
+    <path d="M8 7h8M8 11h6M8 7c3 0 4 1.5 4 4s-1 4-4 4l6 4" />
+  </svg>
+);
+
+export const WaWindowsIcon = ({ size = 16, color = "currentColor", ...props }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill={color} {...props}>
+    <path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.9-1.801" />
+  </svg>
+);
+
+export const WaWhatsAppRoundIcon = ({ size = 18, ...props }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="#25D366" {...props}>
+    <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0012.04 2z" />
+  </svg>
+);
+
+export const WaDoubleTickIcon = ({ size = 16, isRead = true, ...props }) => (
+  <svg
+    width={size}
+    height={size * 0.7}
+    viewBox="0 0 16 11"
+    fill={isRead ? "#53bdeb" : "#8696a0"}
+    {...props}
+  >
+    <path d="M11.07 1.34a.75.75 0 0 0-1.06-.02L4.85 6.3 2.5 3.96a.75.75 0 0 0-1.06 1.06l2.87 2.86a.75.75 0 0 0 1.08 0l5.66-5.48a.75.75 0 0 0 .02-1.06z" />
+    <path d="M15.07 1.34a.75.75 0 0 0-1.06-.02L8.85 6.3l-.92-.93a.75.75 0 1 0-1.06 1.06l1.45 1.45a.75.75 0 0 0 1.08 0l5.66-5.48a.75.75 0 0 0 .02-1.06z" />
+  </svg>
+);
+

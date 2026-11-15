@@ -51,6 +51,7 @@ const ChatProvider = ({ children }) => {
     const saved = localStorage.getItem("chatme_theme");
     return saved ? saved === "dark" : true;
   });
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   // Client-Side E2EE Keys
   const [e2eeKeys, setE2eeKeys] = useState(null);
@@ -507,6 +508,8 @@ const ChatProvider = ({ children }) => {
         e2eeKeys,
         startCall,
         callState,
+        isSearchOpen,
+        setIsSearchOpen,
       }}
     >
       {children}

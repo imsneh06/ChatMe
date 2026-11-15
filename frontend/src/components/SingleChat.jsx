@@ -18,10 +18,6 @@ import {
 import { ChatState } from "../Context/ChatProvider.jsx";
 import React, { useEffect, useState, useRef } from "react";
 import {
-  ArrowBackIcon,
-  DeleteIcon,
-} from "@chakra-ui/icons";
-import {
   WaPhoneIcon,
   WaVideoIcon,
   WaClockIcon,
@@ -31,6 +27,10 @@ import {
   WaAttachIcon,
   WaSendIcon,
   WaMicIcon,
+  WaArrowBackIcon,
+  WaRupeeIcon,
+  WaCameraIcon,
+  WaDotsVerticalIcon,
 } from "./icons/WhatsAppIcons.jsx";
 import { getSender, getSenderDetails } from "../config/ChatLogics.jsx";
 import Profile from "./miscellaneous/Profile.jsx";
@@ -601,7 +601,7 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
             <Box display="flex" alignItems="center" gap={{ base: "8px", md: "12px" }} minW="0" flex="1" mr="6px">
               <IconButton
                 display={{ base: "flex", md: "none" }}
-                icon={<ArrowBackIcon />}
+                icon={<WaArrowBackIcon size={22} color="var(--wa-text-primary, #e9edef)" />}
                 onClick={() => setSelectedChat(null)}
                 variant="ghost"
                 size="sm"
@@ -609,6 +609,7 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
                 aria-label="Back to chats"
                 minW="28px"
                 p="0"
+                _hover={{ bg: "transparent" }}
               />
 
               <Avatar
@@ -762,24 +763,47 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
                   />
                 </Tooltip>
 
-                <Tooltip label="Delete Chat" hasArrow>
-                  <IconButton
-                    aria-label="Delete chat"
-                    icon={<WaDeleteIcon size={18} />}
-                    size="sm"
-                    variant="ghost"
-                    color="var(--wa-icon-gray)"
-                    _hover={{ bg: "var(--wa-hover-bg)", color: "#EF4444" }}
-                    onClick={handleDeleteChat}
-                  />
-                </Tooltip>
+                {/* Desktop 3-Dots Menu */}
+                <Menu>
+                  <Tooltip label="More options" hasArrow>
+                    <MenuButton
+                      as={IconButton}
+                      aria-label="More options"
+                      icon={<WaDotsVerticalIcon size={18} color="var(--wa-icon-gray)" />}
+                      size="sm"
+                      variant="ghost"
+                      _hover={{ bg: "var(--wa-hover-bg)" }}
+                    />
+                  </Tooltip>
+                  <MenuList bg="var(--wa-bg-panel)" borderColor="var(--wa-border)">
+                    {!selectedChat.isGroupChat && (
+                      <Profile user={getSenderDetails(user, selectedChat.users)}>
+                        <MenuItem bg="var(--wa-bg-panel)" color="var(--wa-text-primary)" _hover={{ bg: "var(--wa-bg-hover)" }}>
+                          Contact info
+                        </MenuItem>
+                      </Profile>
+                    )}
+                    <MenuItem
+                      bg="var(--wa-bg-panel)"
+                      color="var(--wa-text-primary)"
+                      _hover={{ bg: "var(--wa-bg-hover)" }}
+                      onClick={() => setSelectedChat(null)}
+                    >
+                      Close chat
+                    </MenuItem>
+                    <MenuItem
+                      bg="var(--wa-bg-panel)"
+                      color="#EF4444"
+                      _hover={{ bg: "var(--wa-bg-hover)" }}
+                      onClick={handleDeleteChat}
+                    >
+                      Delete chat
+                    </MenuItem>
+                  </MenuList>
+                </Menu>
               </Box>
 
-              {!selectedChat.isGroupChat ? (
-                <Box display={{ base: "none", md: "block" }}>
-                  <Profile user={getSenderDetails(user, selectedChat.users)} />
-                </Box>
-              ) : (
+              {selectedChat.isGroupChat && (
                 <UpdateGroupChatModal
                   fetchAgain={fetchAgain}
                   setFetchAgain={setFetchAgain}
@@ -793,13 +817,19 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
                   <MenuButton
                     as={IconButton}
                     aria-label="More options"
-                    icon={<Text fontSize="18px" fontWeight="bold">⋮</Text>}
+                    icon={<WaDotsVerticalIcon size={18} color="var(--wa-icon-gray)" />}
                     size="sm"
                     variant="ghost"
-                    color="var(--wa-icon-gray)"
                     _hover={{ bg: "var(--wa-hover-bg)" }}
                   />
                   <MenuList bg="var(--wa-bg-panel)" borderColor="var(--wa-border)" minW="190px">
+                    {!selectedChat.isGroupChat && (
+                      <Profile user={getSenderDetails(user, selectedChat.users)}>
+                        <MenuItem bg="var(--wa-bg-panel)" color="var(--wa-text-primary)" _hover={{ bg: "var(--wa-bg-hover)" }}>
+                          View contact
+                        </MenuItem>
+                      </Profile>
+                    )}
                     <MenuItem
                       bg="var(--wa-bg-panel)"
                       color="var(--wa-text-primary)"
@@ -977,12 +1007,13 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
             </Box>
           ) : (
             <Box
-              p="8px 16px"
-              bg="var(--wa-bg-panel)"
+              p={{ base: "6px 8px", md: "10px 16px" }}
+              bg="var(--wa-bg-panel, #202c33)"
               display="flex"
               alignItems="center"
-              gap="8px"
+              gap={{ base: "6px", md: "10px" }}
               borderTop="1px solid var(--wa-border)"
+              flexShrink={0}
             >
               {/* Hidden File Input for Image Attachment */}
               <input
@@ -993,41 +1024,42 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
                 onChange={handleImageSelect}
               />
 
-              {/* Emoji Trigger */}
-              <Tooltip label="Emojis" hasArrow>
-                <IconButton
-                  size="sm"
-                  variant="ghost"
-                  icon={<WaSmileyIcon size={22} color="var(--wa-text-secondary)" />}
-                  onClick={() => setShowEmojis(!showEmojis)}
-                  _hover={{ color: "var(--wa-text-primary)", bg: "transparent" }}
-                  aria-label="Emojis"
-                />
-              </Tooltip>
+              {/* Desktop Attachment & Emoji Buttons (on left matching Desktop Screenshot) */}
+              <Box display={{ base: "none", md: "flex" }} alignItems="center" gap="4px">
+                <Tooltip label="Attach photo" hasArrow>
+                  <IconButton
+                    size="sm"
+                    variant="ghost"
+                    icon={<WaAttachIcon size={21} color="var(--wa-text-secondary)" />}
+                    onClick={() => fileInputRef.current?.click()}
+                    _hover={{ color: "var(--wa-text-primary)", bg: "transparent" }}
+                    aria-label="Attach photo"
+                  />
+                </Tooltip>
 
-              {/* Attachment Paperclip Button */}
-              <Tooltip label="Attach photo" hasArrow>
-                <IconButton
-                  size="sm"
-                  variant="ghost"
-                  icon={<WaAttachIcon size={21} color="var(--wa-text-secondary)" />}
-                  onClick={() => fileInputRef.current?.click()}
-                  _hover={{ color: "var(--wa-text-primary)", bg: "transparent" }}
-                  aria-label="Attach photo"
-                />
-              </Tooltip>
+                <Tooltip label="Emojis" hasArrow>
+                  <IconButton
+                    size="sm"
+                    variant="ghost"
+                    icon={<WaSmileyIcon size={22} color="var(--wa-text-secondary)" />}
+                    onClick={() => setShowEmojis(!showEmojis)}
+                    _hover={{ color: "var(--wa-text-primary)", bg: "transparent" }}
+                    aria-label="Emojis"
+                  />
+                </Tooltip>
+              </Box>
 
-              {/* If Recording: Show Audio Recording Controls */}
+              {/* Recording Active Banner */}
               {isRecording ? (
                 <Box
                   flex="1"
                   display="flex"
                   alignItems="center"
                   justifyContent="space-between"
-                  bg="var(--wa-input-bg)"
-                  borderRadius="8px"
-                  px="14px"
-                  py="6px"
+                  bg="var(--wa-input-bg, #2a3942)"
+                  borderRadius="24px"
+                  px="16px"
+                  py="8px"
                 >
                   <Box display="flex" alignItems="center">
                     <span className="wa-rec-dot" />
@@ -1055,45 +1087,120 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
                   </Box>
                 </Box>
               ) : (
-                /* Regular Text Input */
-                <FormControl onKeyDown={sendMessage} flex="1">
-                  <Input
-                    placeholder="Type a message"
-                    value={newMessage}
-                    onChange={typingHandler}
-                    bg="var(--wa-input-bg)"
-                    color="var(--wa-text-primary)"
-                    border="none"
-                    borderRadius="8px"
-                    size="md"
-                    _focus={{ boxShadow: "none" }}
-                  />
-                </FormControl>
+                <>
+                  {/* MOBILE INPUT PILL (Screenshot 2: Smiley + Input + Attach + Rupee + Camera) */}
+                  <Box
+                    display={{ base: "flex", md: "none" }}
+                    flex="1"
+                    alignItems="center"
+                    bg="var(--wa-input-bg, #2a3942)"
+                    borderRadius="24px"
+                    px="10px"
+                    py="4px"
+                    gap="6px"
+                  >
+                    <IconButton
+                      size="xs"
+                      variant="ghost"
+                      icon={<WaSmileyIcon size={20} color="var(--wa-text-secondary)" />}
+                      onClick={() => setShowEmojis(!showEmojis)}
+                      _hover={{ bg: "transparent" }}
+                      aria-label="Emojis"
+                    />
+
+                    <FormControl onKeyDown={sendMessage} flex="1">
+                      <Input
+                        placeholder="Message"
+                        value={newMessage}
+                        onChange={typingHandler}
+                        bg="transparent"
+                        color="var(--wa-text-primary, #e9edef)"
+                        border="none"
+                        p="0"
+                        fontSize="15px"
+                        _placeholder={{ color: "var(--wa-text-secondary, #8696a0)" }}
+                        _focus={{ boxShadow: "none" }}
+                      />
+                    </FormControl>
+
+                    <IconButton
+                      size="xs"
+                      variant="ghost"
+                      icon={<WaAttachIcon size={19} color="var(--wa-text-secondary)" />}
+                      onClick={() => fileInputRef.current?.click()}
+                      _hover={{ bg: "transparent" }}
+                      aria-label="Attach photo"
+                    />
+
+                    <IconButton
+                      size="xs"
+                      variant="ghost"
+                      icon={<WaRupeeIcon size={17} color="var(--wa-text-secondary)" />}
+                      _hover={{ bg: "transparent" }}
+                      aria-label="Payment"
+                    />
+
+                    <IconButton
+                      size="xs"
+                      variant="ghost"
+                      icon={<WaCameraIcon size={19} color="var(--wa-text-secondary)" />}
+                      onClick={() => fileInputRef.current?.click()}
+                      _hover={{ bg: "transparent" }}
+                      aria-label="Camera"
+                    />
+                  </Box>
+
+                  {/* DESKTOP INPUT PILL (Screenshot 1: "Type a message") */}
+                  <Box display={{ base: "none", md: "flex" }} flex="1">
+                    <FormControl onKeyDown={sendMessage} flex="1">
+                      <Input
+                        placeholder="Type a message"
+                        value={newMessage}
+                        onChange={typingHandler}
+                        bg="var(--wa-input-bg, #2a3942)"
+                        color="var(--wa-text-primary, #e9edef)"
+                        border="none"
+                        borderRadius="8px"
+                        h="42px"
+                        fontSize="14.5px"
+                        px="14px"
+                        _placeholder={{ color: "var(--wa-text-secondary, #8696a0)" }}
+                        _focus={{ boxShadow: "none" }}
+                      />
+                    </FormControl>
+                  </Box>
+                </>
               )}
 
-              {/* Send or Mic Button */}
+              {/* FLOATING CIRCULAR BUTTON (Teal/Blue Send or Mic Button) */}
               {newMessage.trim() ? (
                 <IconButton
-                  size="md"
+                  w={{ base: "44px", md: "42px" }}
+                  h={{ base: "44px", md: "42px" }}
                   borderRadius="full"
-                  colorScheme="teal"
-                  bg="var(--wa-accent)"
-                  _hover={{ bg: "var(--wa-accent-light)" }}
+                  bg="var(--wa-accent, #00a884)"
+                  _hover={{ bg: "var(--wa-accent-light, #25D366)" }}
                   icon={<WaSendIcon size={18} color="#FFFFFF" />}
                   onClick={sendMessage}
                   aria-label="Send message"
+                  flexShrink={0}
                 />
               ) : !isRecording ? (
                 <Tooltip label="Hold or click to record voice note" hasArrow>
                   <IconButton
-                    size="md"
+                    w={{ base: "44px", md: "42px" }}
+                    h={{ base: "44px", md: "42px" }}
                     borderRadius="full"
-                    variant="ghost"
-                    color="var(--wa-text-secondary)"
-                    _hover={{ bg: "var(--wa-bg-hover)", color: "var(--wa-accent)" }}
-                    icon={<WaMicIcon size={21} />}
+                    bg={{ base: "var(--wa-accent, #00a884)", md: "transparent" }}
+                    color={{ base: "#FFFFFF", md: "var(--wa-text-secondary)" }}
+                    _hover={{
+                      bg: { base: "var(--wa-accent-light, #25D366)", md: "var(--wa-bg-hover)" },
+                      color: { base: "#FFFFFF", md: "var(--wa-text-primary)" },
+                    }}
+                    icon={<WaMicIcon size={20} />}
                     onClick={startRecording}
                     aria-label="Voice Note"
+                    flexShrink={0}
                   />
                 </Tooltip>
               ) : null}

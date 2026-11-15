@@ -80,19 +80,19 @@
   margin-bottom: 2px;
 }
 
-/* Quoted Reply Block inside Bubble */
+/* Quoted Reply Block inside Bubble matching WhatsApp screenshot */
 .wa-quoted-container {
-  background: rgba(0, 0, 0, 0.1);
-  border-left: 4px solid var(--wa-accent);
-  border-radius: 4px;
-  padding: 4px 8px;
+  background: rgba(0, 0, 0, 0.22);
+  border-left: 4px solid var(--wa-blue-tick, #53bdeb);
+  border-radius: 6px;
+  padding: 5px 9px;
   margin-bottom: 6px;
-  font-size: 12px;
+  font-size: 12.5px;
 }
 
 .wa-quoted-sender {
   font-weight: 600;
-  color: var(--wa-accent);
+  color: var(--wa-blue-tick, #53bdeb);
   margin-bottom: 2px;
 }
 
