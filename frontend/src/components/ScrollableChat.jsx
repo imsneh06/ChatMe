@@ -40,9 +40,7 @@ const ScrollableChat = ({ messages, isGroupChat, onReply, onReaction, onDelete }
   const [lightboxImg, setLightboxImg] = useState(null);
   const [lightboxSender, setLightboxSender] = useState("");
 
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  // Note: Scrolling is handled safely on the messages container in SingleChat
 
   // Find 1-on-1 peer user and their public key
   const peerUser =

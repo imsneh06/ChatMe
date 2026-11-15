@@ -183,7 +183,7 @@ const MyChats = ({ fetchAgain }) => {
           color="var(--wa-text-primary, #e9edef)"
           letterSpacing="-0.3px"
         >
-          WhatsApp
+          ChatMe
         </Text>
 
         <Flex align="center" gap="8px">
@@ -617,7 +617,7 @@ const MyChats = ({ fetchAgain }) => {
           transition="all 0.15s ease"
           onClick={() => {
             toast({
-              title: "WhatsApp Web App Ready",
+              title: "ChatMe Desktop App Ready",
               description: "ChatMe is fully installed and optimized for desktop.",
               status: "info",
               duration: 3000,
@@ -627,7 +627,7 @@ const MyChats = ({ fetchAgain }) => {
         >
           <WaWhatsAppRoundIcon size={20} />
           <Text fontSize="13px" fontWeight="600" color="#25D366">
-            Get WhatsApp for Windows
+            Get ChatMe for Desktop
           </Text>
         </Flex>
       </Box>

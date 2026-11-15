@@ -12,13 +12,18 @@ const ChatPage = () => {
 
   return (
     <Box
-      w="100vw"
-      h="100vh"
+      w="100%"
+      h={{ base: "100dvh", md: "100vh" }}
+      maxH={{ base: "100dvh", md: "100vh" }}
       display="flex"
       flexDirection="row"
       overflow="hidden"
       bg="var(--wa-bg-deep)"
-      position="relative"
+      position="fixed"
+      top="0"
+      left="0"
+      right="0"
+      bottom="0"
     >
       {/* WhatsApp Web Left Vertical Navigation Rail */}
       {user && <LeftNavRail />}

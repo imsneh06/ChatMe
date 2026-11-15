@@ -15,6 +15,7 @@ import {
   Tooltip,
   useToast,
 } from "@chakra-ui/react";
+import { SunIcon, MoonIcon } from "@chakra-ui/icons";
 import { ChatState } from "../Context/ChatProvider.jsx";
 import React, { useEffect, useState, useRef } from "react";
 import {
@@ -55,6 +56,8 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
     socket,
     startCall,
     e2eeKeys,
+    darkMode,
+    toggleDarkMode,
   } = ChatState();
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -74,8 +77,19 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
   const recordingTimerRef = useRef(null);
 
   const fileInputRef = useRef(null);
+  const messagesContainerRef = useRef(null);
   const selectedChatCompareRef = useRef();
   const toast = useToast();
+
+  const scrollToBottom = () => {
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+    }
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, isTyping]);
 
   const commonEmojis = ["😀", "😂", "❤️", "👍", "🔥", "🎉", "🙏", "😍", "👏", "😊"];
 
@@ -590,13 +604,16 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
           {/* WhatsApp Chat Header */}
           <Box
             p={{ base: "8px 10px", md: "10px 16px" }}
-            bg="var(--wa-bg-panel)"
+            bg="var(--wa-bg-panel, #202c33)"
             display="flex"
             justifyContent="space-between"
             alignItems="center"
             borderBottom="1px solid var(--wa-border)"
             w="100%"
             minW="0"
+            flexShrink={0}
+            position="relative"
+            zIndex={10}
           >
             <Box display="flex" alignItems="center" gap={{ base: "8px", md: "12px" }} minW="0" flex="1" mr="6px">
               <IconButton
@@ -605,7 +622,7 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
                 onClick={() => setSelectedChat(null)}
                 variant="ghost"
                 size="sm"
-                color="var(--wa-text-secondary)"
+                color="var(--wa-text-primary, #e9edef)"
                 aria-label="Back to chats"
                 minW="28px"
                 p="0"
@@ -663,16 +680,16 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
             </Box>
 
             <Box display="flex" alignItems="center" gap={{ base: "2px", md: "4px" }} flexShrink={0}>
-              {/* 1-on-1 WebRTC Voice & Video Calling (Always visible for 1-on-1 chats) */}
+              {/* 1-on-1 WebRTC Voice & Video Calling (Crisp & clearly visible) */}
               {!selectedChat.isGroupChat && !otherUser?.isDeleted && (
                 <>
                   <Tooltip label="Voice Call" hasArrow>
                     <IconButton
                       aria-label="Voice Call"
-                      icon={<WaPhoneIcon size={18} />}
+                      icon={<WaPhoneIcon size={19} color="var(--wa-text-primary, #e9edef)" />}
                       size="sm"
                       variant="ghost"
-                      color="var(--wa-icon-gray)"
+                      color="var(--wa-text-primary, #e9edef)"
                       _hover={{ bg: "var(--wa-hover-bg)", color: "var(--wa-accent-light)" }}
                       onClick={() => startCall({ userToCall: otherUser, isVideo: false })}
                     />
@@ -681,16 +698,29 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
                   <Tooltip label="Video Call" hasArrow>
                     <IconButton
                       aria-label="Video Call"
-                      icon={<WaVideoIcon size={19} />}
+                      icon={<WaVideoIcon size={20} color="var(--wa-text-primary, #e9edef)" />}
                       size="sm"
                       variant="ghost"
-                      color="var(--wa-icon-gray)"
+                      color="var(--wa-text-primary, #e9edef)"
                       _hover={{ bg: "var(--wa-hover-bg)", color: "var(--wa-accent-light)" }}
                       onClick={() => startCall({ userToCall: otherUser, isVideo: true })}
                     />
                   </Tooltip>
                 </>
               )}
+
+              {/* Theme Toggle Button (Instant 1-Click Access on Mobile & Desktop) */}
+              <Tooltip label={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"} hasArrow>
+                <IconButton
+                  aria-label="Toggle theme"
+                  icon={darkMode ? <SunIcon color="var(--wa-text-primary, #e9edef)" /> : <MoonIcon color="var(--wa-text-primary, #e9edef)" />}
+                  size="sm"
+                  variant="ghost"
+                  color="var(--wa-text-primary, #e9edef)"
+                  _hover={{ bg: "var(--wa-hover-bg)", color: "var(--wa-accent-light)" }}
+                  onClick={toggleDarkMode}
+                />
+              </Tooltip>
 
               {/* Desktop Direct Buttons */}
               <Box display={{ base: "none", md: "flex" }} alignItems="center" gap="4px">
@@ -709,13 +739,13 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
                     <MenuButton
                       as={IconButton}
                       aria-label="Disappearing Messages"
-                      icon={<WaClockIcon size={18} />}
+                      icon={<WaClockIcon size={18} color={selectedChat.disappearingTimer > 0 ? "var(--wa-accent-light)" : "var(--wa-text-primary, #e9edef)"} />}
                       size="sm"
                       variant="ghost"
                       color={
                         selectedChat.disappearingTimer > 0
                           ? "var(--wa-accent-light)"
-                          : "var(--wa-icon-gray)"
+                          : "var(--wa-text-primary, #e9edef)"
                       }
                       _hover={{ bg: "var(--wa-hover-bg)" }}
                     />
@@ -751,10 +781,10 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
                 <Tooltip label={showSearch ? "Close search" : "Search in chat"} hasArrow>
                   <IconButton
                     aria-label="Search chat"
-                    icon={<WaSearchIcon size={18} />}
+                    icon={<WaSearchIcon size={18} color="var(--wa-text-primary, #e9edef)" />}
                     size="sm"
                     variant="ghost"
-                    color={showSearch ? "var(--wa-accent)" : "var(--wa-icon-gray)"}
+                    color={showSearch ? "var(--wa-accent)" : "var(--wa-text-primary, #e9edef)"}
                     _hover={{ bg: "var(--wa-hover-bg)" }}
                     onClick={() => {
                       setShowSearch(!showSearch);
@@ -769,7 +799,7 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
                     <MenuButton
                       as={IconButton}
                       aria-label="More options"
-                      icon={<WaDotsVerticalIcon size={18} color="var(--wa-icon-gray)" />}
+                      icon={<WaDotsVerticalIcon size={18} color="var(--wa-text-primary, #e9edef)" />}
                       size="sm"
                       variant="ghost"
                       _hover={{ bg: "var(--wa-hover-bg)" }}
@@ -817,7 +847,7 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
                   <MenuButton
                     as={IconButton}
                     aria-label="More options"
-                    icon={<WaDotsVerticalIcon size={18} color="var(--wa-icon-gray)" />}
+                    icon={<WaDotsVerticalIcon size={18} color="var(--wa-text-primary, #e9edef)" />}
                     size="sm"
                     variant="ghost"
                     _hover={{ bg: "var(--wa-hover-bg)" }}
@@ -902,7 +932,9 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
 
           {/* Messages Feed Area with WhatsApp Doodle Wallpaper */}
           <Box
+            ref={messagesContainerRef}
             flex="1"
+            minH="0"
             className="wa-chat-bg messages"
             position="relative"
             overflowY="auto"

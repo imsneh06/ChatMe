@@ -105,9 +105,10 @@ const CallModal = ({
       <Box
         position="relative"
         w="100%"
-        maxW={isVideo && callAccepted ? "880px" : "420px"}
-        h={isVideo && callAccepted ? "82vh" : "auto"}
-        minH={isVideo && callAccepted ? "520px" : "460px"}
+        maxW={isVideo && callAccepted ? "920px" : "420px"}
+        h={isVideo && callAccepted ? { base: "85vh", md: "80vh" } : "auto"}
+        maxH="90vh"
+        minH={isVideo && callAccepted ? { base: "480px", md: "520px" } : "460px"}
         bg="var(--wa-bg-panel, #111b21)"
         borderRadius="20px"
         overflow="hidden"
@@ -122,10 +123,11 @@ const CallModal = ({
           justify="space-between"
           align="center"
           px="22px"
-          py="16px"
-          bg="rgba(17, 27, 33, 0.9)"
+          py="14px"
+          bg="rgba(17, 27, 33, 0.95)"
           borderBottom="1px solid rgba(255, 255, 255, 0.06)"
           zIndex={10}
+          flexShrink={0}
         >
           <Flex align="center" gap="8px">
             <FaLock color="#25D366" fontSize="12px" />
@@ -162,10 +164,10 @@ const CallModal = ({
         </Flex>
 
         {/* Center View */}
-        <Box flex="1" position="relative" display="flex" alignItems="center" justifyContent="center">
+        <Box flex="1" minH="0" position="relative" overflow="hidden" display="flex" alignItems="center" justifyContent="center">
           {/* Active Video Call */}
           {isVideo && callAccepted ? (
-            <Box w="100%" h="100%" position="relative" bg="#000">
+            <Box w="100%" h="100%" minH="0" position="relative" bg="#000" overflow="hidden">
               {/* Remote Video Stream */}
               <video
                 ref={remoteVideoRef}
@@ -174,8 +176,10 @@ const CallModal = ({
                 style={{
                   width: "100%",
                   height: "100%",
-                  objectFit: "cover",
+                  maxHeight: "100%",
+                  objectFit: "contain",
                   display: "block",
+                  backgroundColor: "#000",
                 }}
               />
 
@@ -259,14 +263,14 @@ const CallModal = ({
                   <Text fontSize="13.5px" color="var(--wa-text-secondary, #8696a0)">
                     {isReceivingCall
                       ? isVideo
-                        ? "Incoming WhatsApp Video Call..."
-                        : "Incoming WhatsApp Voice Call..."
+                        ? "Incoming ChatMe Video Call..."
+                        : "Incoming ChatMe Voice Call..."
                       : isCalling
                       ? "Calling..."
                       : callAccepted
                       ? isVideo
-                        ? "WhatsApp Video Call"
-                        : "WhatsApp Voice Call"
+                        ? "ChatMe Video Call"
+                        : "ChatMe Voice Call"
                       : "Connecting..."}
                   </Text>
                 </Flex>
@@ -275,16 +279,18 @@ const CallModal = ({
           )}
         </Box>
 
-        {/* Bottom Control Bar */}
+        {/* Bottom Control Bar (Always visible & docked) */}
         <Flex
           justify="center"
           align="center"
-          gap="28px"
+          gap={{ base: "20px", md: "28px" }}
           px="24px"
-          py="24px"
-          bg="rgba(17, 27, 33, 0.95)"
-          borderTop="1px solid rgba(255, 255, 255, 0.06)"
-          zIndex={10}
+          py={{ base: "14px", md: "18px" }}
+          bg="rgba(17, 27, 33, 0.96)"
+          borderTop="1px solid rgba(255, 255, 255, 0.08)"
+          zIndex={20}
+          flexShrink={0}
+          w="100%"
         >
           {isReceivingCall && !callAccepted ? (
             /* Incoming Call Controls: Decline and Accept Handsets with Labels */

@@ -95,6 +95,17 @@ const ChatProvider = ({ children }) => {
     });
   };
 
+  // Synchronize Theme class with HTML body
+  useEffect(() => {
+    if (darkMode) {
+      document.body.classList.remove("light-theme");
+      document.documentElement.classList.remove("light-theme");
+    } else {
+      document.body.classList.add("light-theme");
+      document.documentElement.classList.add("light-theme");
+    }
+  }, [darkMode]);
+
   // Load User Info
   useEffect(() => {
     try {

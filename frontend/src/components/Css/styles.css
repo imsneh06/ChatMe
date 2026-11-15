@@ -2,9 +2,13 @@
   display: flex;
   flex-direction: column;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 10px 5% 10px 5%;
   gap: 4px;
   height: 100%;
+  min-height: 0;
+  flex: 1;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* WhatsApp Message Row */
