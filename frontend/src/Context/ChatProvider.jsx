@@ -53,6 +53,29 @@ const ChatProvider = ({ children }) => {
   });
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
+  // Favourites State
+  const [favourites, setFavourites] = useState(() => {
+    try {
+      const saved = localStorage.getItem("chatme_favourites");
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+
+  const toggleFavourite = (chatId) => {
+    if (!chatId) return;
+    setFavourites((prev) => {
+      const next = prev.includes(chatId)
+        ? prev.filter((id) => id !== chatId)
+        : [...prev, chatId];
+      try {
+        localStorage.setItem("chatme_favourites", JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
+  };
+
   // Client-Side E2EE Keys
   const [e2eeKeys, setE2eeKeys] = useState(null);
 
@@ -521,6 +544,9 @@ const ChatProvider = ({ children }) => {
         callState,
         isSearchOpen,
         setIsSearchOpen,
+        favourites,
+        setFavourites,
+        toggleFavourite,
       }}
     >
       {children}

@@ -50,14 +50,6 @@ const MyChats = ({ fetchAgain }) => {
   const [loggedUser, setLoggedUser] = useState();
   const [filterQuery, setFilterQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState("all"); // 'all', 'unread', 'favourites', 'groups'
-  const [favourites, setFavourites] = useState(() => {
-    try {
-      const saved = localStorage.getItem("chatme_favourites");
-      return saved ? JSON.parse(saved) : [];
-    } catch (e) {
-      return [];
-    }
-  });
 
   const {
     user,
@@ -72,6 +64,8 @@ const MyChats = ({ fetchAgain }) => {
     darkMode,
     toggleDarkMode,
     setIsSearchOpen,
+    favourites = [],
+    toggleFavourite,
   } = ChatState();
 
   const fetchChats = async () => {
@@ -111,16 +105,23 @@ const MyChats = ({ fetchAgain }) => {
     navigate("/");
   };
 
-  // Toggle favourite
-  const toggleFavourite = (chatId, e) => {
-    e.stopPropagation();
-    setFavourites((prev) => {
-      const next = prev.includes(chatId)
-        ? prev.filter((id) => id !== chatId)
-        : [...prev, chatId];
-      localStorage.setItem("chatme_favourites", JSON.stringify(next));
-      return next;
-    });
+  // Helper: check if a chat is unread
+  const isChatUnread = (chat) => {
+    if (!chat) return false;
+    // 1. Unread from socket notification list
+    if (notification?.some((n) => (n.chat?._id || n.chat) === chat._id)) return true;
+    // 2. Unread from latest message read status
+    if (chat.latestMessage) {
+      const senderId = String(chat.latestMessage.sender?._id || chat.latestMessage.sender || "");
+      const myId = String(user?._id || loggedUser?._id || "");
+      if (senderId && myId && senderId !== myId) {
+        const readBy = (chat.latestMessage.readBy || []).map((u) => String(u._id || u));
+        if (!readBy.includes(myId) && chat.latestMessage.status !== "seen") {
+          return true;
+        }
+      }
+    }
+    return false;
   };
 
   // Chat filtering based on search query and active tab chip
@@ -137,21 +138,19 @@ const MyChats = ({ fetchAgain }) => {
 
     // 2. Chip Tab Filter
     if (activeFilter === "groups") {
-      return chat.isGroupChat;
+      return chat.isGroupChat === true;
     }
     if (activeFilter === "favourites") {
-      return favourites.includes(chat._id);
+      return favourites?.includes(chat._id);
     }
     if (activeFilter === "unread") {
-      // Check if chat has any notifications
-      const hasNotification = notification?.some((n) => n.chat?._id === chat._id);
-      return hasNotification;
+      return isChatUnread(chat);
     }
 
     return true;
   });
 
-  const unreadCount = notification?.length || 0;
+  const unreadChatsCount = chats?.filter(isChatUnread).length || 0;
 
   return (
     <Box
@@ -365,7 +364,7 @@ const MyChats = ({ fetchAgain }) => {
           onClick={() => setActiveFilter("unread")}
         >
           <span>Unread</span>
-          {unreadCount > 0 && (
+          {unreadChatsCount > 0 && (
             <Badge
               bg="#25D366"
               color="#111b21"
@@ -374,7 +373,7 @@ const MyChats = ({ fetchAgain }) => {
               fontWeight="bold"
               px="5px"
             >
-              {unreadCount}
+              {unreadChatsCount}
             </Badge>
           )}
         </Box>
@@ -388,6 +387,9 @@ const MyChats = ({ fetchAgain }) => {
           fontSize="13px"
           fontWeight="500"
           cursor="pointer"
+          display="flex"
+          alignItems="center"
+          gap="6px"
           transition="all 0.15s ease"
           bg={activeFilter === "favourites" ? "rgba(0, 168, 132, 0.2)" : "var(--wa-bg-panel, #202c33)"}
           color={activeFilter === "favourites" ? "var(--wa-accent-light, #25D366)" : "var(--wa-text-secondary, #8696a0)"}
@@ -395,7 +397,19 @@ const MyChats = ({ fetchAgain }) => {
           _hover={{ bg: activeFilter === "favourites" ? "rgba(0, 168, 132, 0.28)" : "var(--wa-bg-hover)" }}
           onClick={() => setActiveFilter("favourites")}
         >
-          Favourites
+          <span>Favourites</span>
+          {favourites?.length > 0 && (
+            <Badge
+              bg="rgba(245, 158, 11, 0.25)"
+              color="#F59E0B"
+              borderRadius="full"
+              fontSize="10px"
+              fontWeight="bold"
+              px="5px"
+            >
+              {favourites.length}
+            </Badge>
+          )}
         </Box>
 
         {/* Groups Chip */}
@@ -433,11 +447,12 @@ const MyChats = ({ fetchAgain }) => {
                   ? getSender(loggedUser || user, chat.users)
                   : chat.chatName;
 
-                const hasUnread = notification?.some((n) => n.chat?._id === chat._id);
-                const isFavourite = favourites.includes(chat._id);
+                const hasUnread = isChatUnread(chat);
+                const isFavourite = favourites?.includes(chat._id);
 
                 return (
                   <Box
+                    className="wa-chat-item"
                     onClick={() => {
                       setSelectedChat(chat);
                       // Clear notifications for this chat
@@ -552,11 +567,39 @@ const MyChats = ({ fetchAgain }) => {
 
                         {/* Badges / Pin / Favourite Icons */}
                         <Flex align="center" gap="6px" ml="8px" flexShrink={0}>
-                          {isFavourite && (
-                            <Text fontSize="12px" color="#F59E0B">
-                              ★
-                            </Text>
-                          )}
+                          {/* Star Toggle Button */}
+                          <Tooltip
+                            label={isFavourite ? "Remove from favourites" : "Add to favourites"}
+                            hasArrow
+                            placement="top"
+                          >
+                            <Box
+                              as="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleFavourite(chat._id);
+                              }}
+                              aria-label={isFavourite ? "Remove from favourites" : "Add to favourites"}
+                              display={isFavourite ? "flex" : { base: "flex", md: "none" }}
+                              className="wa-fav-btn"
+                              alignItems="center"
+                              justifyContent="center"
+                              w="22px"
+                              h="22px"
+                              borderRadius="full"
+                              bg="transparent"
+                              border="none"
+                              cursor="pointer"
+                              color={isFavourite ? "#F59E0B" : "var(--wa-text-secondary, #8696a0)"}
+                              _hover={{ transform: "scale(1.25)", color: "#F59E0B" }}
+                              transition="all 0.15s ease"
+                            >
+                              <Text fontSize="14px" lineHeight="1">
+                                {isFavourite ? "★" : "☆"}
+                              </Text>
+                            </Box>
+                          </Tooltip>
+
                           {hasUnread && (
                             <Badge
                               bg="#25D366"
@@ -583,12 +626,29 @@ const MyChats = ({ fetchAgain }) => {
               flexDir="column"
               align="center"
               justify="center"
-              h="240px"
+              h="260px"
               textAlign="center"
-              p="20px"
+              p="24px"
               color="var(--wa-text-secondary, #8696a0)"
             >
-              <Text fontSize="14px">No chats found in this view</Text>
+              <Text fontSize="15px" fontWeight="600" color="var(--wa-text-primary, #e9edef)" mb="6px">
+                {activeFilter === "unread"
+                  ? "No unread chats"
+                  : activeFilter === "favourites"
+                  ? "No favourite chats"
+                  : activeFilter === "groups"
+                  ? "No group chats"
+                  : "No chats found"}
+              </Text>
+              <Text fontSize="13px" maxW="280px">
+                {activeFilter === "unread"
+                  ? "You are all caught up! There are no unread messages."
+                  : activeFilter === "favourites"
+                  ? "Star important chats to keep them at your fingertips."
+                  : activeFilter === "groups"
+                  ? "Use the new chat icon above to create your first group."
+                  : "Start a new conversation by clicking the compose button above."}
+              </Text>
             </Flex>
           )
         ) : (

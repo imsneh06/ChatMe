@@ -167,3 +167,15 @@ html, body, #root {
     opacity: 0.8;
   }
 }
+
+/* Chat Header Text Alignment & Bootstrap Reset */
+.wa-chat-header p,
+.wa-chat-header .chakra-text {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Chat Item Star Action Hover */
+.wa-chat-item:hover .wa-fav-btn {
+  display: flex !important;
+}

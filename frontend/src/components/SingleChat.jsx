@@ -58,6 +58,8 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
     e2eeKeys,
     darkMode,
     toggleDarkMode,
+    favourites = [],
+    toggleFavourite,
   } = ChatState();
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -714,8 +716,9 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
             flexShrink={0}
             position="relative"
             zIndex={10}
+            className="wa-chat-header"
           >
-            <Box display="flex" alignItems="center" gap={{ base: "8px", md: "12px" }} minW="0" flex="1" mr="6px">
+            <Flex alignItems="center" gap={{ base: "8px", md: "12px" }} minW="0" flex="1" mr="6px">
               <IconButton
                 display={{ base: "flex", md: "none" }}
                 icon={<WaArrowBackIcon size={22} color="var(--wa-text-primary, #e9edef)" />}
@@ -730,7 +733,8 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
               />
 
               <Avatar
-                size="sm"
+                size="md"
+                boxSize={{ base: "38px", md: "40px" }}
                 name={
                   !selectedChat.isGroupChat
                     ? getSender(user, selectedChat.users)
@@ -744,12 +748,15 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
                 )}
               </Avatar>
 
-              <Box minW="0" flex="1">
+              <Flex direction="column" justify="center" minW="0" flex="1" m="0" p="0" style={{ margin: 0, padding: 0 }}>
                 <Text
-                  fontSize={{ base: "15px", md: "16px" }}
+                  fontSize={{ base: "15.5px", md: "16px" }}
                   fontWeight="600"
                   color="var(--wa-text-primary)"
                   lineHeight="1.2"
+                  m="0"
+                  p="0"
+                  style={{ margin: 0, padding: 0 }}
                   isTruncated
                 >
                   {!selectedChat.isGroupChat
@@ -757,7 +764,16 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
                     : selectedChat.chatName}
                 </Text>
 
-                <Text fontSize="12px" color="var(--wa-text-secondary)" isTruncated>
+                <Text
+                  fontSize="12px"
+                  color="var(--wa-text-secondary)"
+                  lineHeight="1.2"
+                  m="0"
+                  p="0"
+                  mt="2px"
+                  style={{ margin: "2px 0 0 0", padding: 0 }}
+                  isTruncated
+                >
                   {isTyping ? (
                     <span style={{ color: "var(--wa-accent-light)", fontStyle: "italic", fontWeight: "600" }}>
                       typing...
@@ -776,8 +792,8 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
                     `${selectedChat.users?.length || 0} participants`
                   )}
                 </Text>
-              </Box>
-            </Box>
+              </Flex>
+            </Flex>
 
             <Box display="flex" alignItems="center" gap={{ base: "2px", md: "4px" }} flexShrink={0}>
               {/* 1-on-1 WebRTC Voice & Video Calling (Crisp & clearly visible) */}
@@ -917,6 +933,16 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
                       bg="var(--wa-bg-panel)"
                       color="var(--wa-text-primary)"
                       _hover={{ bg: "var(--wa-bg-hover)" }}
+                      onClick={() => toggleFavourite && toggleFavourite(selectedChat._id)}
+                    >
+                      {favourites?.includes(selectedChat._id)
+                        ? "★ Remove from favourites"
+                        : "☆ Add to favourites"}
+                    </MenuItem>
+                    <MenuItem
+                      bg="var(--wa-bg-panel)"
+                      color="var(--wa-text-primary)"
+                      _hover={{ bg: "var(--wa-bg-hover)" }}
                       onClick={() => setSelectedChat(null)}
                     >
                       Close chat
@@ -970,6 +996,16 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
                       }}
                     >
                       {showSearch ? "Close search" : "Search in chat"}
+                    </MenuItem>
+                    <MenuItem
+                      bg="var(--wa-bg-panel)"
+                      color="var(--wa-text-primary)"
+                      _hover={{ bg: "var(--wa-bg-hover)" }}
+                      onClick={() => toggleFavourite && toggleFavourite(selectedChat._id)}
+                    >
+                      {favourites?.includes(selectedChat._id)
+                        ? "★ Remove from favourites"
+                        : "☆ Add to favourites"}
                     </MenuItem>
                     <MenuItem
                       bg="var(--wa-bg-panel)"

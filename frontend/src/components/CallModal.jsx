@@ -283,9 +283,8 @@ const CallModal = ({
         <Flex
           justify="center"
           align="center"
-          gap={{ base: "20px", md: "28px" }}
-          px="24px"
-          py={{ base: "14px", md: "18px" }}
+          px={{ base: "16px", md: "32px" }}
+          py={{ base: "22px", md: "28px" }}
           bg="rgba(17, 27, 33, 0.96)"
           borderTop="1px solid rgba(255, 255, 255, 0.08)"
           zIndex={20}
@@ -294,9 +293,15 @@ const CallModal = ({
         >
           {isReceivingCall && !callAccepted ? (
             /* Incoming Call Controls: Decline and Accept Handsets with Labels */
-            <>
+            <Flex
+              align="center"
+              justify="center"
+              w="100%"
+              gap={{ base: "48px", md: "72px" }}
+              style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "56px" }}
+            >
               {/* Decline Call Button */}
-              <Flex direction="column" align="center" gap="8px">
+              <Flex direction="column" align="center" gap="10px" minW="72px" mx={{ base: "18px", md: "28px" }}>
                 <button
                   onClick={onReject}
                   aria-label="Decline Call"
@@ -318,13 +323,13 @@ const CallModal = ({
                 >
                   <WaPhoneHangupIcon size={26} color="#FFFFFF" />
                 </button>
-                <Text fontSize="12px" fontWeight="600" color="var(--wa-text-secondary, #8696a0)">
+                <Text fontSize="12.5px" fontWeight="600" color="var(--wa-text-secondary, #8696a0)">
                   Decline
                 </Text>
               </Flex>
 
               {/* Accept Call Button */}
-              <Flex direction="column" align="center" gap="8px">
+              <Flex direction="column" align="center" gap="10px" minW="72px" mx={{ base: "18px", md: "28px" }}>
                 <button
                   onClick={onAnswer}
                   aria-label="Answer Call"
@@ -346,25 +351,31 @@ const CallModal = ({
                 >
                   <WaPhoneIcon size={26} color="#FFFFFF" />
                 </button>
-                <Text fontSize="12px" fontWeight="600" color="#25D366">
+                <Text fontSize="12.5px" fontWeight="600" color="#25D366">
                   Accept
                 </Text>
               </Flex>
-            </>
+            </Flex>
           ) : (
             /* In-Call or Calling Controls: Mute, Camera, End Call */
-            <>
+            <Flex
+              align="center"
+              justify="center"
+              w="100%"
+              gap={{ base: "32px", md: "52px" }}
+              style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "40px" }}
+            >
               {callAccepted && (
-                <Flex direction="column" align="center" gap="6px">
+                <Flex direction="column" align="center" gap="8px" minW="64px" mx={{ base: "14px", md: "24px" }}>
                   <button
                     onClick={onToggleMute}
                     aria-label="Toggle Microphone"
                     style={{
-                      width: "50px",
-                      height: "50px",
+                      width: "52px",
+                      height: "52px",
                       borderRadius: "50%",
                       background: isMuted ? "rgba(239, 68, 68, 0.25)" : "rgba(255, 255, 255, 0.1)",
-                      border: isMuted ? "1px solid #EF4444" : "1px solid rgba(255, 255, 255, 0.12)",
+                      border: isMuted ? "1.5px solid #EF4444" : "1px solid rgba(255, 255, 255, 0.14)",
                       cursor: "pointer",
                       display: "flex",
                       alignItems: "center",
@@ -375,28 +386,28 @@ const CallModal = ({
                     onMouseLeave={(e) => (e.currentTarget.style.background = isMuted ? "rgba(239,68,68,0.25)" : "rgba(255,255,255,0.1)")}
                   >
                     {isMuted ? (
-                      <WaMicMutedIcon size={22} color="#EF4444" />
+                      <WaMicMutedIcon size={23} color="#EF4444" />
                     ) : (
-                      <WaMicIcon size={22} color="#e9edef" />
+                      <WaMicIcon size={23} color="#e9edef" />
                     )}
                   </button>
-                  <Text fontSize="11px" color={isMuted ? "#EF4444" : "var(--wa-text-secondary, #8696a0)"}>
+                  <Text fontSize="12px" fontWeight="500" color={isMuted ? "#EF4444" : "var(--wa-text-secondary, #8696a0)"}>
                     {isMuted ? "Muted" : "Mute"}
                   </Text>
                 </Flex>
               )}
 
               {isVideo && callAccepted && (
-                <Flex direction="column" align="center" gap="6px">
+                <Flex direction="column" align="center" gap="8px" minW="64px" mx={{ base: "14px", md: "24px" }}>
                   <button
                     onClick={onToggleVideo}
                     aria-label="Toggle Camera"
                     style={{
-                      width: "50px",
-                      height: "50px",
+                      width: "52px",
+                      height: "52px",
                       borderRadius: "50%",
                       background: isVideoOff ? "rgba(239, 68, 68, 0.25)" : "rgba(255, 255, 255, 0.1)",
-                      border: isVideoOff ? "1px solid #EF4444" : "1px solid rgba(255, 255, 255, 0.12)",
+                      border: isVideoOff ? "1.5px solid #EF4444" : "1px solid rgba(255, 255, 255, 0.14)",
                       cursor: "pointer",
                       display: "flex",
                       alignItems: "center",
@@ -407,25 +418,25 @@ const CallModal = ({
                     onMouseLeave={(e) => (e.currentTarget.style.background = isVideoOff ? "rgba(239,68,68,0.25)" : "rgba(255,255,255,0.1)")}
                   >
                     {isVideoOff ? (
-                      <WaVideoOffIcon size={22} color="#EF4444" />
+                      <WaVideoOffIcon size={23} color="#EF4444" />
                     ) : (
-                      <WaVideoIcon size={22} color="#e9edef" />
+                      <WaVideoIcon size={23} color="#e9edef" />
                     )}
                   </button>
-                  <Text fontSize="11px" color={isVideoOff ? "#EF4444" : "var(--wa-text-secondary, #8696a0)"}>
+                  <Text fontSize="12px" fontWeight="500" color={isVideoOff ? "#EF4444" : "var(--wa-text-secondary, #8696a0)"}>
                     {isVideoOff ? "Cam Off" : "Camera"}
                   </Text>
                 </Flex>
               )}
 
               {/* End Call Button */}
-              <Flex direction="column" align="center" gap="6px">
+              <Flex direction="column" align="center" gap="8px" minW="64px" mx={{ base: "14px", md: "24px" }}>
                 <button
                   onClick={onEnd}
                   aria-label="End Call"
                   style={{
-                    width: "56px",
-                    height: "56px",
+                    width: "58px",
+                    height: "58px",
                     borderRadius: "50%",
                     background: "#EA4335",
                     border: "none",
@@ -441,11 +452,11 @@ const CallModal = ({
                 >
                   <WaPhoneHangupIcon size={26} color="#FFFFFF" />
                 </button>
-                <Text fontSize="11.5px" fontWeight="600" color="#EF4444">
+                <Text fontSize="12.5px" fontWeight="600" color="#EF4444">
                   End
                 </Text>
               </Flex>
-            </>
+            </Flex>
           )}
         </Flex>
       </Box>
